@@ -1,0 +1,1 @@
+ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS return_url character varying;

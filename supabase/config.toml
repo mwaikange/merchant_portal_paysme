@@ -1,0 +1,79 @@
+project_id = "zvoqrqdnuupdefsuiurt"
+
+# Production is the canonical destination for Auth confirmation links. Keep
+# local URLs only as explicit development allow-list entries.
+[auth]
+site_url = "https://paysme.site"
+additional_redirect_urls = [
+  "https://paysme.site/auth",
+  "https://www.paysme.site/auth",
+  "http://localhost:8080/auth",
+  "http://localhost:8081/auth",
+  "http://127.0.0.1:8080/auth",
+  "http://127.0.0.1:8081/auth"
+]
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+
+[auth.email.template.confirmation]
+subject = "Confirm your PaySME merchant account"
+content_path = "./supabase/templates/confirmation.html"
+
+[functions.webhooks-payments]
+verify_jwt = false
+
+[functions.payments]
+verify_jwt = false
+
+[functions.mobile-request-to-pay]
+verify_jwt = false
+
+[functions.adumo-card]
+verify_jwt = false
+
+[functions.mobiwand-payment]
+verify_jwt = false
+
+[functions.wayame-payment]
+verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.send-sms]
+verify_jwt = false
+
+[functions.resolve-payment-code]
+verify_jwt = false
+
+[functions.vendor-registration]
+verify_jwt = false
+
+[functions.process-scheduled-sms]
+verify_jwt = false
+
+[functions.vendor-payment-checkout]
+verify_jwt = false
+
+[functions.merchant-qr-links]
+verify_jwt = false
+
+[functions.merchant-qr-baskets]
+verify_jwt = false
+
+[functions.merchant-waitlist]
+verify_jwt = false
+
+[functions.user-journeys-access]
+verify_jwt = false
+static_files = ["./functions/user-journeys-access/*.html"]
+
+[functions.psp-sponsor-access]
+verify_jwt = false
+static_files = ["./functions/psp-sponsor-access/*.html"]
+
+[functions.psp-sponsor-pdf]
+verify_jwt = false
+static_files = ["./functions/psp-sponsor-pdf/*.pdf"]

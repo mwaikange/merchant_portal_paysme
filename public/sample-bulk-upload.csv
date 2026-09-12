@@ -1,0 +1,5 @@
+mobile,email,reference,amount,date,subscription,months,period
+0812345678,john@example.com,INV001,50.00,12-Feb-2026,no,,
+0859876543,jane@example.com,INV002,75.50,12-Feb-2026,yes,7,monthly
+0815556666,mike@example.com,INV003,100.00,15-Mar-2026,yes,12,quarterly
+0853334444,sara@example.com,INV004,25.99,15-Mar-2026,no,,

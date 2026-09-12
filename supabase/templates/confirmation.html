@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Confirm your PaySME merchant account</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f4f6;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:620px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.08);">
+            <tr>
+              <td align="center" style="background:#374151;padding:26px 24px;">
+                <img src="https://zvoqrqdnuupdefsuiurt.supabase.co/storage/v1/object/public/LOGO/Frame%20237753%202.png" width="260" alt="PaySME — Bridging Wallets, Apps &amp; Websites" style="display:block;width:260px;max-width:100%;height:auto;border:0;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:34px 30px 30px;">
+                <h1 style="margin:0 0 14px;font-size:25px;line-height:1.25;color:#111827;">Welcome to PaySME</h1>
+                <p style="margin:0 0 22px;font-size:16px;line-height:1.65;color:#4b5563;">Confirm your email address to finish setting up your merchant account.</p>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px;background:#f8fafc;border:1px solid #d1d5db;border-radius:9px;">
+                  <tr>
+                    <td style="padding:18px 20px;">
+                      <div style="font-size:12px;line-height:1.4;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;">Email</div>
+                      <div style="margin-top:5px;font-size:16px;font-weight:700;color:#111827;word-break:break-word;">{{ .Email }}</div>
+                    </td>
+                  </tr>
+                  {{ if .Data.vendor_id }}
+                  <tr>
+                    <td style="padding:0 20px 18px;">
+                      <div style="padding-top:16px;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.4;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;">Your USV ID</div>
+                      <div style="margin-top:7px;font-family:Consolas,Monaco,monospace;font-size:18px;font-weight:700;color:#111827;letter-spacing:.03em;">{{ .Data.vendor_id }}</div>
+                      <div style="margin-top:7px;font-size:13px;line-height:1.5;color:#6b7280;">Keep this ID. You will use it with your email address and password when signing in.</div>
+                    </td>
+                  </tr>
+                  {{ end }}
+                </table>
+
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td bgcolor="#fbbf24" style="border-radius:7px;">
+                      <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 22px;font-size:15px;font-weight:700;color:#111827;text-decoration:none;">Confirm Email Address</a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:24px 0 0;font-size:13px;line-height:1.55;color:#6b7280;">After confirmation, return to PaySME and sign in using your email address, password, and USV ID.</p>
+                <p style="margin:12px 0 0;font-size:12px;line-height:1.55;color:#9ca3af;">If you did not create this account, you can safely ignore this email.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

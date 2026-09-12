@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PaySME SDK Demo — Integration Examples</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; color: #1f2937; }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 28px; margin-bottom: 8px; }
+    .subtitle { color: #6b7280; margin-bottom: 32px; }
+    .demo-card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    .demo-card h2 { font-size: 20px; margin-bottom: 8px; }
+    .demo-card p { color: #6b7280; font-size: 14px; margin-bottom: 16px; }
+    .demo-btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .btn-blue { background: #2563eb; color: #fff; }
+    .btn-blue:hover { background: #1d4ed8; }
+    .btn-green { background: #16a34a; color: #fff; }
+    .btn-green:hover { background: #15803d; }
+    pre { background: #1f2937; color: #e5e7eb; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; margin: 12px 0; }
+    code { font-family: 'Fira Code', 'Consolas', monospace; }
+    .badge { display: inline-block; background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>PaySME SDK Demo <span class="badge">v1.11.1</span></h1>
+    <p class="subtitle">Test both static and dynamic integration modes</p>
+
+    <!-- Static Mode Demo -->
+    <div class="demo-card">
+      <h2>1. Static Mode — Fixed Amount</h2>
+      <p>The merchant pre-defines the amount, invoice ID, and product. The modal opens with these values pre-filled.</p>
+      <button class="demo-btn btn-blue" id="static-pay-btn">Pay N$ 100 — Water Bill</button>
+      <pre><code>&lt;script defer src="https://www.paysme.site/sdk/v1/paysme.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  document.getElementById('pay-btn').addEventListener('click', function() {
+    window.PaySME.init({
+      vendor_uuid: "32f44735-f665-4b5f-94ca-19d1a45d2942", // Merchant ID UUID; never Vendor ID
+      api_key: "YOUR_API_KEY",
+      amount_nad: 100,
+      invoice_id: "100_Water",
+      product_name: "Water Bill",
+      recurring: true,
+      recurring_period: "monthly",
+      on_success: function(result) {
+        console.log("Payment code generated:", result.generated_code);
+      },
+      on_error: function(error) {
+        console.error("Payment failed:", error);
+      },
+      on_cancel: function() {
+        console.log("Payment cancelled");
+      }
+    });
+  });
+&lt;/script&gt;</code></pre>
+    </div>
+
+    <!-- Dynamic Mode Demo -->
+    <div class="demo-card">
+      <h2>2. Dynamic Mode — User Selects Amount</h2>
+      <p>The customer chooses the amount and product at payment time. Great for donation pages, custom invoicing, etc.</p>
+      <button class="demo-btn btn-green" id="dynamic-pay-btn">Pay — Choose Amount</button>
+      <pre><code>&lt;script defer src="https://www.paysme.site/sdk/v1/paysme.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  var paysme = window.PaySME.create({
+    vendor_uuid: "32f44735-f665-4b5f-94ca-19d1a45d2942", // Merchant ID UUID; never Vendor ID
+    api_key: "YOUR_API_KEY",
+    on_success: function(result) {
+      console.log("Payment code:", result.generated_code);
+    },
+    on_error: function(error) {
+      console.error("Error:", error);
+    },
+    on_cancel: function() {
+      console.log("Cancelled");
+    }
+  });
+
+  document.getElementById('pay-btn').addEventListener('click', function() {
+    paysme.open();
+  });
+&lt;/script&gt;</code></pre>
+    </div>
+
+    <!-- Pending Pay Mode Demo -->
+    <div class="demo-card">
+      <h2>3. Pending Pay Mode — Merchant Passes the Code</h2>
+      <p>The merchant already has the <code>generated_code</code> from when it was created. They pass it directly — the modal validates the code and shows payment options (Copy, IPP, Card). No forms, no lookups by email/mobile.</p>
+      <button class="demo-btn btn-green" id="pending-pay-btn" style="background:#f59e0b;color:#1f2937;">Pay Pending Code</button>
+      <pre><code>&lt;script defer src="https://www.paysme.site/sdk/v1/paysme.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  // Merchant already has the generated_code from when the paycode was created
+  var pendingPay = window.PaySME.pending({
+    vendor_uuid: "32f44735-f665-4b5f-94ca-19d1a45d2942", // Merchant ID UUID; never Vendor ID
+    api_key: "YOUR_API_KEY",
+    generated_code: "1234-5678-9012",  // required — the pending paycode
+    on_success: function(result) {
+      console.log("Code validated:", result.generated_code);
+    },
+    on_error: function(error) {
+      console.error("Error:", error);
+    },
+    on_cancel: function() {
+      console.log("Modal closed");
+    }
+  });
+
+  document.getElementById('pending-btn').addEventListener('click', function() {
+    pendingPay.open();
+  });
+&lt;/script&gt;</code></pre>
+    </div>
+
+    <div class="demo-card">
+      <h2>Callbacks</h2>
+      <p>Check the browser console to see callback results from the demos above.</p>
+      <div id="callback-log" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;min-height:60px;font-size:13px;color:#6b7280;">
+        Waiting for events...
+      </div>
+    </div>
+  </div>
+
+  <!-- Load SDK -->
+  <script src="paysme.js"></script>
+  <script>
+    var logEl = document.getElementById('callback-log');
+    function log(msg) {
+      var line = document.createElement('div');
+      line.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
+      line.style.marginBottom = '4px';
+      logEl.appendChild(line);
+    }
+
+    // Use a demo merchant ID (replace with real one for actual testing)
+    var DEMO_MERCHANT = "00000000-1986-0026-0000-000000000001";
+    var DEMO_API_KEY = "demo-key";
+
+    // Static mode
+    document.getElementById('static-pay-btn').addEventListener('click', function () {
+      window.PaySME.init({
+        vendor_uuid: DEMO_MERCHANT,
+        api_key: DEMO_API_KEY,
+        amount_nad: 100,
+        invoice_id: "100_Water",
+        product_name: "Water Bill",
+        recurring: true,
+        recurring_period: "monthly",
+        on_success: function (r) { log('SUCCESS: Code = ' + r.generated_code); },
+        on_error: function (e) { log('ERROR: ' + (e.message || e)); },
+        on_cancel: function () { log('CANCELLED'); }
+      });
+    });
+
+    // Dynamic mode
+    var dynamicPay = window.PaySME.create({
+      vendor_uuid: DEMO_MERCHANT,
+      api_key: DEMO_API_KEY,
+      on_success: function (r) { log('DYNAMIC SUCCESS: Code = ' + r.generated_code); },
+      on_error: function (e) { log('DYNAMIC ERROR: ' + (e.message || e)); },
+      on_cancel: function () { log('DYNAMIC CANCELLED'); }
+    });
+
+    document.getElementById('dynamic-pay-btn').addEventListener('click', function () {
+      dynamicPay.open();
+    });
+
+    // Pending Pay mode — merchant passes the generated_code directly
+    var pendingPay = window.PaySME.pending({
+      vendor_uuid: DEMO_MERCHANT,
+      api_key: DEMO_API_KEY,
+      generated_code: "0000-0000-0000", // demo code — replace with a real pending code to test
+      on_success: function (r) { log('PENDING SUCCESS: Code = ' + r.generated_code); },
+      on_error: function (e) { log('PENDING ERROR: ' + (e.message || e)); },
+      on_cancel: function () { log('PENDING CANCELLED'); }
+    });
+
+    document.getElementById('pending-pay-btn').addEventListener('click', function () {
+      pendingPay.open();
+    });
+  </script>
+</body>
+</html>

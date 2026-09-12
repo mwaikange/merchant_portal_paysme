@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PaySME End-User Journey Mapping</title>
+<style>
+:root {
+  --navy:#061226;
+  --navy-2:#0a1b34;
+  --gold:#f2b821;
+  --ink:#1f2937;
+  --muted:#667085;
+  --line:#d8e0ea;
+  --panel:#f7f9fc;
+  --green:#2e7d32;
+  --green-bg:#eef8f0;
+  --red:#c62828;
+  --red-bg:#fff2f2;
+  --white:#ffffff;
+  --shadow:0 10px 28px rgba(6,18,38,.08);
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  margin:0;
+  font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  color:var(--ink);
+  background:#eef2f7;
+  line-height:1.45;
+}
+.page {
+  width:min(1500px, calc(100% - 28px));
+  margin:22px auto;
+  background:var(--white);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+header {
+  position:sticky;
+  top:0;
+  z-index:20;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+  padding:16px 34px;
+  color:white;
+  background:linear-gradient(120deg,var(--navy),var(--navy-2));
+  border-bottom:5px solid var(--gold);
+}
+.brand {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  min-width:0;
+}
+.brand img {
+  width:178px;
+  max-width:38vw;
+  height:auto;
+  display:block;
+}
+.brand-copy strong {
+  display:block;
+  font-size:18px;
+  letter-spacing:.01em;
+}
+.brand-copy span {
+  display:block;
+  margin-top:2px;
+  color:#d9e0e8;
+  font-size:12px;
+}
+nav {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+nav a,
+nav button {
+  color:white;
+  text-decoration:none;
+  border:1px solid rgba(255,255,255,.3);
+  background:transparent;
+  padding:7px 10px;
+  border-radius:999px;
+  font-family:inherit;
+  font-size:12px;
+  cursor:pointer;
+}
+nav a:hover,
+nav button:hover {
+  background:rgba(255,255,255,.12);
+  border-color:var(--gold);
+}
+main { padding:34px; }
+.hero {
+  display:grid;
+  grid-template-columns:1.25fr .75fr;
+  gap:28px;
+  align-items:stretch;
+}
+.hero-card {
+  padding:34px;
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 94% 8%, rgba(242,184,33,.2), transparent 28%),
+    linear-gradient(135deg,#f8f9f9,#eef0ef);
+  border:1px solid var(--line);
+}
+.eyebrow {
+  color:var(--navy);
+  font-weight:800;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+}
+h1 {
+  margin:10px 0 14px;
+  color:var(--navy);
+  font-size:clamp(32px,4.5vw,58px);
+  line-height:1.05;
+}
+.lead {
+  margin:0;
+  max-width:880px;
+  color:var(--muted);
+  font-size:17px;
+}
+.scope-card {
+  padding:26px;
+  color:white;
+  border-radius:18px;
+  background:linear-gradient(145deg,var(--navy),var(--navy-2));
+}
+.scope-card h2 { margin-top:0; color:white; }
+.scope-card ul { padding-left:20px; margin-bottom:0; }
+.scope-card li { margin:8px 0; color:#edf0f2; }
+
+.section {
+  margin-top:34px;
+  padding-top:6px;
+}
+.section-title {
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:18px;
+  padding-bottom:12px;
+  border-bottom:2px solid var(--line);
+}
+.section-title h2 {
+  margin:0;
+  color:var(--navy);
+  font-size:27px;
+}
+.section-title p {
+  margin:0;
+  color:var(--muted);
+  max-width:720px;
+  text-align:right;
+}
+
+.legend {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+  margin-top:18px;
+}
+.legend-item {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:15px 16px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--panel);
+}
+.marker {
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  background:white;
+  flex:0 0 auto;
+}
+.marker.red { border:5px solid var(--red); }
+.marker.green { border:5px solid var(--green); }
+.marker.modal {
+  border-radius:7px;
+  border:3px solid var(--navy);
+  background:#eef0ef;
+}
+
+.master-flow {
+  margin-top:20px;
+  padding:22px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:white;
+  box-shadow:0 8px 22px rgba(11,31,92,.06);
+}
+.flow {
+  display:grid;
+  grid-template-columns:repeat(5,minmax(120px,1fr));
+  gap:26px;
+  align-items:center;
+}
+.step {
+  position:relative;
+  min-height:84px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:14px 12px;
+  border:1px solid #cbd6e4;
+  border-radius:14px;
+  background:linear-gradient(180deg,#fff,#f4f7fb);
+  color:var(--navy);
+  font-weight:800;
+}
+.step:not(:last-child)::after {
+  content:"→";
+  position:absolute;
+  right:-22px;
+  top:50%;
+  transform:translateY(-50%);
+  color:#7e8aa0;
+  font-size:22px;
+  font-weight:700;
+}
+.outcomes {
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:14px;
+  margin-top:22px;
+}
+.outcome {
+  padding:16px;
+  border-radius:14px;
+  border:1px solid var(--line);
+}
+.outcome.fail { background:var(--red-bg); }
+.outcome.success { background:var(--green-bg); }
+.outcome.merchant { background:#eef0ef; }
+.outcome strong { display:block; color:var(--navy); margin-bottom:4px; }
+
+.matrix-wrap {
+  overflow-x:auto;
+  margin-top:18px;
+  border:1px solid var(--line);
+  border-radius:16px;
+}
+table {
+  border-collapse:collapse;
+  width:100%;
+  min-width:1040px;
+  background:white;
+}
+th {
+  padding:14px 13px;
+  color:white;
+  text-align:left;
+  background:var(--navy);
+  font-size:13px;
+}
+td {
+  padding:13px;
+  border-top:1px solid var(--line);
+  vertical-align:top;
+  font-size:13px;
+}
+tbody tr:nth-child(even) { background:#f8fafc; }
+td:first-child { font-weight:800; color:var(--navy); }
+
+.group-label {
+  display:inline-flex;
+  margin:24px 0 12px;
+  padding:8px 13px;
+  border-radius:999px;
+  background:var(--navy);
+  color:white;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.journey-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:20px;
+}
+.journey {
+  padding:22px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:white;
+  box-shadow:0 8px 22px rgba(11,31,92,.05);
+}
+.journey h3 {
+  margin:0 0 4px;
+  color:var(--navy);
+  font-size:20px;
+}
+.journey .intro {
+  margin:0 0 16px;
+  color:var(--muted);
+  font-size:13px;
+}
+.journey-flow {
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:18px;
+  align-items:center;
+}
+.journey-flow .step {
+  min-height:70px;
+  font-size:12px;
+  padding:10px 8px;
+}
+.branch-row {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:16px;
+}
+.branch {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:11px 12px;
+  border-radius:12px;
+  font-size:12px;
+}
+.branch.return { background:var(--red-bg); color:#7d1d1d; }
+.branch.complete { background:var(--green-bg); color:#1e6025; }
+.branch .marker { width:20px; height:20px; }
+.branch .marker.red, .branch .marker.green { border-width:4px; }
+.details {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:14px;
+}
+.detail {
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--panel);
+  font-size:12px;
+}
+.detail strong {
+  display:block;
+  color:var(--navy);
+  margin-bottom:4px;
+}
+
+.rules {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+  margin-top:18px;
+}
+.rule {
+  padding:18px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:white;
+}
+.rule b {
+  color:var(--navy);
+  display:block;
+  margin-bottom:6px;
+}
+
+footer {
+  margin-top:36px;
+  padding:20px 34px;
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+  color:#dce1e6;
+  background:linear-gradient(120deg,var(--navy),var(--navy-2));
+  font-size:12px;
+}
+footer strong { color:white; }
+
+@media (max-width:1100px) {
+  .hero { grid-template-columns:1fr; }
+  .journey-grid { grid-template-columns:1fr; }
+  .rules { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .section-title { align-items:start; flex-direction:column; }
+  .section-title p { text-align:left; }
+}
+@media (max-width:850px) {
+  .page { width:100%; margin:0; border-radius:0; }
+  header { position:relative; padding:14px 18px; align-items:flex-start; }
+  nav { display:none; }
+  main { padding:22px 16px; }
+  .hero-card, .scope-card { padding:22px; }
+  .legend, .outcomes, .details, .rules { grid-template-columns:1fr; }
+  .flow, .journey-flow { grid-template-columns:1fr; gap:10px; }
+  .step:not(:last-child)::after {
+    content:"↓";
+    right:auto;
+    left:50%;
+    top:auto;
+    bottom:-19px;
+    transform:translateX(-50%);
+  }
+  .branch-row { grid-template-columns:1fr; }
+  footer { flex-direction:column; }
+}
+@media print {
+  body { background:white; }
+  .page { width:100%; margin:0; box-shadow:none; border-radius:0; }
+  header { position:static; }
+  nav { display:none; }
+  .journey, .master-flow, .matrix-wrap, .scope-card, .hero-card {
+    break-inside:avoid;
+  }
+  .section { break-before:auto; }
+  footer { break-inside:avoid; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <div class="brand">
+    <img src="data:image/png;base64,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" alt="PaySME logo">
+    <div class="brand-copy">
+      <strong>End-User Journey Mapping</strong>
+      <span>Merchant-client payment initiation and completion flows</span>
+    </div>
+  </div>
+  <nav>
+    <a href="#overview">Overview</a>
+    <a href="#matrix">Channel matrix</a>
+    <a href="#journeys">Journey maps</a>
+    <a href="#controls">Controls</a>
+    <button type="button" onclick="window.parent.postMessage({type:'paysme:user-journeys-logout'}, '*')">Log out</button>
+  </nav>
+</header>
+
+<main>
+<section class="hero" id="overview">
+  <div class="hero-card">
+    <div class="eyebrow">Business analyst process mapping</div>
+    <h1>Eight initiation routes.<br>One PaySME payment journey.</h1>
+    <p class="lead">This page maps how a merchant’s client moves from an app, website, invoice, subscription, QR code or payment link into the common PaySME payment modal—then completes immediately or returns later through the SMS payment link.</p>
+  </div>
+  <aside class="scope-card">
+    <h2>Core business rules</h2>
+    <ul>
+      <li>Every route ultimately reaches the PaySME payment modal.</li>
+      <li>Every initiated transaction sends an SMS containing a payment link.</li>
+      <li>Request to Pay and Bulk Invoicing pre-generate and send the PayCode.</li>
+      <li>Failed payment status is visible immediately on the UI.</li>
+      <li>Success triggers a client confirmation SMS and merchant notification.</li>
+    </ul>
+  </aside>
+</section>
+
+<section class="section">
+  <div class="section-title">
+    <h2>Universal orchestration</h2>
+    <p>The journey changes at the start, but the downstream payment control pattern remains consistent.</p>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="marker red"></span><div><strong>Red</strong><br>User returns later through the SMS payment link.</div></div>
+    <div class="legend-item"><span class="marker green"></span><div><strong>Green</strong><br>User completes payment successfully.</div></div>
+    <div class="legend-item"><span class="marker modal"></span><div><strong>Common modal</strong><br>Hosted page or embedded checkout experience.</div></div>
+  </div>
+
+  <div class="master-flow">
+    <div class="flow">
+      <div class="step">Payment initiation channel</div>
+      <div class="step">Hosted or in-app PaySME modal</div>
+      <div class="step">PayCode generated or presented</div>
+      <div class="step">SMS with payment link</div>
+      <div class="step">Facilitator confirms result</div>
+    </div>
+    <div class="outcomes">
+      <div class="outcome fail"><strong>Failure handling</strong>The user sees the failed status immediately on the UI or payment modal.</div>
+      <div class="outcome success"><strong>End-user confirmation</strong>A successful payment generates a confirmation SMS to the client.</div>
+      <div class="outcome merchant"><strong>Merchant notification</strong>The merchant receives a successful-payment notification from PaySME.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="matrix">
+  <div class="section-title">
+    <h2>Channel summary matrix</h2>
+    <p>A compact comparison of how each merchant-client journey begins and reaches the common payment modal.</p>
+  </div>
+  <div class="matrix-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Initiation channel</th>
+          <th>How the client starts</th>
+          <th>Path to PaySME modal</th>
+          <th>PayCode handling</th>
+          <th>Primary use case</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>App</td><td>Client checks out inside a merchant mobile app.</td><td>The app opens an embedded or hosted PaySME modal.</td><td>The client initiates the PayCode flow in-session; the SMS link is also sent.</td><td>Native or hybrid app commerce.</td></tr>
+        <tr><td>Website</td><td>Client checks out on a merchant website.</td><td>The website opens the hosted PaySME modal or payment page.</td><td>The client initiates the PayCode flow in-session; the SMS link is also sent.</td><td>E-commerce, booking and service payments.</td></tr>
+        <tr><td>Request to Pay</td><td>The merchant sends a one-to-one request to a named client.</td><td>The client opens the SMS or payment link and lands on the modal.</td><td>The PayCode is already generated and sent by the merchant workflow.</td><td>One-off receivables and manual collections.</td></tr>
+        <tr><td>Bulk Invoicing</td><td>The merchant sends many payment requests in one billing run.</td><td>Each client opens a unique invoice or payment link into the modal.</td><td>The PayCode is pre-generated and distributed as part of the billing run.</td><td>High-volume collection campaigns.</td></tr>
+        <tr><td>Subscriptions</td><td>The merchant adds a subscriber, or the client selects a plan.</td><td>The subscription journey opens the same PaySME modal.</td><td>The client initiates the PayCode flow during subscription checkout.</td><td>Recurring services and membership plans.</td></tr>
+        <tr><td>QR Code</td><td>The client scans a fixed QR for one product, service or fee.</td><td>The scan opens a hosted PaySME modal tied to the item and amount.</td><td>The client proceeds through the PayCode flow; the SMS link is also sent.</td><td>Entry fees, clubs, shows and fixed-price offers.</td></tr>
+        <tr><td>POS QR Code</td><td>The client scans a QR representing several goods or a basket total.</td><td>The scan opens the hosted modal with transaction details.</td><td>The client proceeds through the PayCode flow; the SMS link is also sent.</td><td>Home shops and variable-value POS sales.</td></tr>
+        <tr><td>Payment Links</td><td>The client taps a link from an invoice, WhatsApp, status or advert.</td><td>The payment link opens the hosted PaySME modal directly.</td><td>The client continues immediately; the SMS link remains the fallback.</td><td>Remote selling and “order with me” clients.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section" id="journeys">
+  <div class="section-title">
+    <h2>Detailed journey maps</h2>
+    <p>Each card shows the direct path, the red return-later route and the green successful-completion outcome.</p>
+  </div>
+
+  <div class="group-label">Real-time checkout journeys</div>
+  <div class="journey-grid">
+
+    <article class="journey">
+      <h3>1. App checkout</h3>
+      <p class="intro">The client begins inside a merchant mobile application.</p>
+      <div class="journey-flow">
+        <div class="step">User checks out in app</div><div class="step">PaySME modal opens</div><div class="step">PayCode flow starts</div><div class="step">SMS link sent</div><div class="step">Payment result</div>
+      </div>
+      <div class="branch-row">
+        <div class="branch return"><span class="marker red"></span>Client returns later through the SMS payment link.</div>
+        <div class="branch complete"><span class="marker green"></span>Payment completes and success is confirmed.</div>
+      </div>
+      <div class="details">
+        <div class="detail"><strong>Modal</strong>Embedded in the app or opened as a hosted handoff.</div>
+        <div class="detail"><strong>PayCode</strong>Generated during the active app checkout.</div>
+        <div class="detail"><strong>Use case</strong>Native and hybrid mobile commerce.</div>
+      </div>
+    </article>
+
+    <article class="journey">
+      <h3>2. Website checkout</h3>
+      <p class="intro">The client begins on a merchant website.</p>
+      <div class="journey-flow">
+        <div class="step">User checks out online</div><div class="step">Hosted modal opens</div><div class="step">PayCode flow starts</div><div class="step">SMS link sent</div><div class="step">Payment result</div>
+      </div>
+      <div class="branch-row">
+        <div class="branch return"><span class="marker red"></span>Client reopens the transaction from the SMS link.</div>
+        <div class="branch complete"><span class="marker green"></span>Payment completes and success is confirmed.</div>
+      </div>
+      <div class="details">
+        <div class="detail"><strong>Modal</strong>Hosted PaySME modal or hosted payment page.</div>
+        <div class="detail"><strong>PayCode</strong>Generated during the website session.</div>
+        <div class="detail"><strong>Use case</strong>E-commerce, bookings and services.</div>
+      </div>
+    </article>
+
+    <article class="journey">
+      <h3>3. Subscriptions</h3>
+      <p class="intro">The merchant adds a subscriber, or the client selects a subscription product or service.</p>
+      <div class="journey-flow">
+        <div class="step">Subscription selected</div><div class="step">PaySME modal opens</div><div class="step">PayCode flow starts</div><div class="step">SMS link sent</div><div class="step">Payment result</div>
+      </div>
+      <div class="branch-row">
+        <div class="branch return"><span class="marker red"></span>Subscriber returns later from the SMS payment link.</div>
+        <div class="branch complete"><span class="marker green"></span>Payment completes and subscription is confirmed.</div>
+      </div>
+      <div class="details">
+        <div class="detail"><strong>Modal</strong>Opened from the subscription enrolment flow.</div>
+        <div class="detail"><strong>PayCode</strong>Generated during subscription checkout.</div>
+        <div class="detail"><strong>Use case</strong>Recurring services and memberships.</div>
+      </div>
+    </article>
+
+    <article class="journey">
+      <h3>4. Payment Links</h3>
+      <p class="intro">The merchant shares a payment link through an invoice, WhatsApp, status or advert post.</p>
+      <div class="journey-flow">
+        <div class="step">Client taps payment link</div><div class="step">Hosted modal opens</div><div class="step">PayCode flow starts</div><div class="step">SMS link sent</div><div class="step">Payment result</div>
+      </div>
+      <div class="branch-row">
+        <div class="branch return"><span class="marker red"></span>Client returns later through the SMS payment link.</div>
+        <div class="branch complete"><span class="marker green"></span>Payment completes and success is confirmed.</div>
+      </div>
+      <div class="details">
+        <div class="detail"><strong>Modal</strong>Opened directly from a shared hosted link.</div>
+        <div class="detail"><strong>PayCode</strong>Generated after the client opens the link.</div>
+        <div class="detail"><strong>Use case</strong>Remote selling and “order with me”.</div>
+      </div>
+    </article>
+  </div>
+
+  <div class="group-label">Merchant-pushed journeys</div>
+  <div class="journey-grid">
+
+    <article class="journey">
+      <h3>5. Request to Pay</h3>
+      <p class="intro">The merchant initiates a one-to-one request for a specific client.</p>
+      <div class="journey-flow">
+        <div class="step">Merchant sends request</div><div class="step">SMS link opens modal</div><div class="step">PayCode already available</div><div class="step">Pay now or later</div><div class="step">Payment result</div>
+      </div>
+      <div class="branch-row">
+        <div class="branch return"><span class="marker red"></span>The same SMS link is used when the client returns later.</div>
+        <div class="branch complete"><span class="marker green"></span>Payment completes and both parties are notified.</div>
+      </div>
+      <div class="details">
+        <div class="detail"><strong>Modal</strong>Opened from the merchant-generated request.</div>
+        <div class="detail"><strong>PayCode</strong>Generated before the client opens the modal.</div>
+        <div class="detail"><strong>Use case</strong>One-off collections and receivables.</div>
+      </div>
+    </article>
+
+    <article class="journey">
+      <h3>6. Bulk Invoicing</h3>
+      <p class="intro">The merchant initiates many client requests in one billing run.</p>
+      <div class="journey-flow">
+        <div class="step">Merchant sends bulk requests</div><div class="step">Unique link opens modal</div><div class="step">PayCode already available</div><div class="step">Pay now or later</div><div class="step">Payment result</div>
+      </div>
+      <div class="branch-row">
+        <div class="branch return"><span class="marker red"></span>Each client can return through their unique SMS link.</div>
+        <div class="branch complete"><span class="marker green"></span>Each successful payment is confirmed and reported.</div>
+      </div>
+      <div class="details">
+        <div class="detail"><strong>Modal</strong>Opened from a unique invoice or request link.</div>
+        <div class="detail"><strong>PayCode</strong>Pre-generated during the bulk billing run.</div>
+        <div class="detail"><strong>Use case</strong>School fees, memberships and batch billing.</div>
+      </div>
+    </article>
+  </div>
+
+  <div class="group-label">Scan-based journeys</div>
+  <div class="journey-grid">
+
+    <article class="journey">
+      <h3>7. QR Code — single item or service</h3>
+      <p class="intro">The client scans a fixed QR code tied to one product, service, entry fee or amount.</p>
+      <div class="journey-flow">
+        <div class="step">Client scans fixed QR</div><div class="step">Hosted modal opens</div><div class="step">PayCode flow starts</div><div class="step">SMS link sent</div><div class="step">Payment result</div>
+      </div>
+      <div class="branch-row">
+        <div class="branch return"><span class="marker red"></span>Client returns later through the SMS payment link.</div>
+        <div class="branch complete"><span class="marker green"></span>Payment completes and success is confirmed.</div>
+      </div>
+      <div class="details">
+        <div class="detail"><strong>Modal</strong>Preloaded with the fixed item and amount.</div>
+        <div class="detail"><strong>PayCode</strong>Generated after the QR scan opens the modal.</div>
+        <div class="detail"><strong>Use case</strong>Events, clubs, shows and fixed fees.</div>
+      </div>
+    </article>
+
+    <article class="journey">
+      <h3>8. POS QR Code — multiple goods</h3>
+      <p class="intro">The client scans a QR code representing several goods or a variable basket total.</p>
+      <div class="journey-flow">
+        <div class="step">Client scans POS QR</div><div class="step">Hosted modal opens</div><div class="step">PayCode flow starts</div><div class="step">SMS link sent</div><div class="step">Payment result</div>
+      </div>
+      <div class="branch-row">
+        <div class="branch return"><span class="marker red"></span>Client returns later through the SMS payment link.</div>
+        <div class="branch complete"><span class="marker green"></span>Payment completes and success is confirmed.</div>
+      </div>
+      <div class="details">
+        <div class="detail"><strong>Modal</strong>Loaded with the basket or transaction total.</div>
+        <div class="detail"><strong>PayCode</strong>Generated after the POS QR scan.</div>
+        <div class="detail"><strong>Use case</strong>Home shops and variable-value POS sales.</div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="section" id="controls">
+  <div class="section-title">
+    <h2>Control points and implementation implications</h2>
+    <p>These rules apply consistently across merchant onboarding, UI design and facilitator integration.</p>
+  </div>
+  <div class="rules">
+    <div class="rule"><b>1. One common modal</b>Merchants choose the starting channel, while PaySME standardizes the downstream checkout and status experience.</div>
+    <div class="rule"><b>2. SMS re-entry</b>The SMS payment link reduces abandonment by allowing the client to return after the original session ends.</div>
+    <div class="rule"><b>3. Immediate failure visibility</b>The payment modal must display failed status immediately so that the client is not left uncertain.</div>
+    <div class="rule"><b>4. Dual success notification</b>The client receives a success SMS, and the merchant receives a successful-payment notification.</div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div><strong>Confidential</strong> — business process and payment-journey documentation.</div>
+  <div>© Mwai PaySME Solutions cc. All rights reserved.</div>
+</footer>
+</div>
+</body>
+</html>

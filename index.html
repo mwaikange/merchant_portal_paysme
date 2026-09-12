@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#222922" />
+    <link id="paysme-merchant-manifest" rel="manifest" href="/merchant.webmanifest" />
+    <script>
+      (function () {
+        var consent = { analytics: false, marketing: false };
+        try {
+          var stored = JSON.parse(
+            window.localStorage.getItem("paysme-tracking-consent-v1") || "null"
+          );
+          if (stored && stored.version === 1) {
+            consent.analytics = stored.analytics === true;
+            consent.marketing = stored.marketing === true;
+          }
+        } catch (error) {
+          // Keep optional tracking denied when a saved preference cannot be read.
+        }
+        window.__paysmeTrackingConsent = consent;
+      })();
+    </script>
+
+    <!-- Google tag (gtag.js) with consent denied until the visitor opts in. -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag("consent", "default", {
+        analytics_storage: window.__paysmeTrackingConsent.analytics ? "granted" : "denied",
+        ad_storage: "denied",
+        ad_user_data: "denied",
+        ad_personalization: "denied"
+      });
+      gtag("js", new Date());
+      gtag("config", "G-Q43XNWGDEN", {
+        send_page_view: false,
+        anonymize_ip: true
+      });
+    </script>
+    <script
+      id="paysme-google-analytics"
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-Q43XNWGDEN"
+    ></script>
+
+    <!-- Meta Pixel base code. Events remain revoked until marketing consent. -->
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";
+      n.queue=[];t=b.createElement(e);t.async=!0;t.id="paysme-meta-pixel";
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window,document,"script",
+      "https://connect.facebook.net/en_US/fbevents.js");
+      fbq(
+        "consent",
+        window.__paysmeTrackingConsent.marketing ? "grant" : "revoke"
+      );
+      fbq("init", "1314069464140664");
+    </script>
+
+    <title>PaySME - Online Payments & Subscriptions without Cards</title>
+    <meta name="description" content="Payments simplified for entrepreneurs. PaySME helps Namibian merchants accept checkout payments, PaySME codes, and payment links." />
+    <meta name="author" content="PaySME" />
+    <meta name="keywords" content="PaySME, Namibia payments, online payments offline, businesses, subscriptions without cards, card-free solutions" />
+    <link rel="icon" href="/paysme-favicon.png?v=20260814" type="image/png">
+    <link rel="shortcut icon" href="/favicon.ico?v=20260814">
+    <link rel="apple-touch-icon" href="/paysme-favicon.png?v=20260814">
+
+    <link rel="canonical" href="https://www.paysme.site/" />
+
+    <meta property="og:title" content="PaySME - Simplified Payments" />
+    <meta property="og:description" content="Bridging wallets, apps, and websites for Namibian merchants." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.paysme.site/" />
+    <meta property="og:site_name" content="PaySME" />
+    <meta property="og:image" content="https://www.paysme.site/og-paysme-social.png" />
+    <meta property="og:image:secure_url" content="https://www.paysme.site/og-paysme-social.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="PaySME - Simplified Payments" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@paysme_namibia" />
+    <meta name="twitter:title" content="PaySME - Simplified Payments" />
+    <meta name="twitter:description" content="Bridging wallets, apps, and websites for Namibian merchants." />
+    <meta name="twitter:image" content="https://www.paysme.site/og-paysme-social.png" />
+    <meta name="twitter:image:alt" content="PaySME - Simplified Payments" />
+    <script defer src="/sdk/v1/paysme.js?v=1.11.1"></script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <!-- TWIPLA Tracking Code for https://www.paysme.site -->
+    <script id="paysme-twipla-bootstrap">
+      (function () {
+        if (!window.__paysmeTrackingConsent.analytics) return;
+        (function(v,i,s,a,t){
+          v[t]=v[t]||function(){(v[t].v=v[t].v||[]).push(arguments)};
+          if(!v._visaSettings){v._visaSettings={}}
+          v._visaSettings[a]={v:"1.0",s:a,a:"1",t:t};
+          var b=i.getElementsByTagName("body")[0];
+          var p=i.createElement("script");
+          p.id="paysme-twipla-analytics";
+          p.defer=1;
+          p.async=1;
+          p.src=s+"?s="+a;
+          b.appendChild(p)
+        })(
+          window,
+          document,
+          "//app-worker.visitor-analytics.io/main.js",
+          "44f9d18c-89a5-11f1-9aa5-960004340fd3",
+          "va"
+        );
+      })();
+    </script>
+    <!-- End TWIPLA Tracking Code for https://www.paysme.site -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
