@@ -307,7 +307,7 @@ const Auth = () => {
   const dedicatedMerchantLogin = activeTab !== "signup" && (window.location.hostname === new URL(merchantOrigin).hostname || isLocalHost);
   if (dedicatedMerchantLogin) {
     return (
-      <div className="grid min-h-screen bg-[#1e2320] text-white lg:h-screen lg:grid-cols-[minmax(0,1fr)_360px] lg:overflow-hidden">
+      <div className="grid min-h-screen bg-[#1e2320] text-white lg:h-screen lg:grid-cols-[minmax(0,1fr)_400px] lg:overflow-hidden">
         <section className="relative hidden min-h-screen overflow-hidden border-b-[20px] border-[#f0b429] bg-[#1e2320] lg:block lg:h-screen">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(246,196,49,0.05),transparent_55%)]" />
           {merchantImages.map((image, index) => {
@@ -322,16 +322,16 @@ const Auth = () => {
           })}
           <div className="absolute bottom-6 left-8 z-10">
             <img src={paysmeLogoMain} alt="PaySME" className="h-[52px] w-auto" />
-            <p className="mt-3 text-[0.7rem] font-medium uppercase tracking-[0.18em] text-[#8a9188]">Merchants Operations Management Portal</p>
+            <p className="mt-3 text-[0.7rem] font-medium uppercase tracking-[0.18em] text-[#8a9188]">Merchants Management Portal</p>
             <p className="mt-1 text-[0.65rem] uppercase tracking-[0.18em] text-[#8a9188]/60">PaySME Solutions CC | All rights reserved</p>
           </div>
         </section>
 
-        <section className="flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#2a2e2b] px-6 py-8 lg:h-screen lg:px-8 lg:py-8">
+        <section className="flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#2a2e2b] px-6 py-8 lg:h-screen lg:-translate-x-3 lg:px-8 lg:py-8">
           <div className="w-full max-w-md">
             <div className="mb-6 text-center">
               <img src={paysmeLogoMain} alt="PaySME" className="mx-auto mb-3 h-[56px] w-auto" />
-              <p className="text-[0.7rem] font-medium uppercase tracking-[0.18em] text-[#8a9188]">Merchants Operations Management Portal</p>
+              <p className="text-[0.7rem] font-medium uppercase tracking-[0.18em] text-[#8a9188]">Merchants Management Portal</p>
             </div>
 
             {showForgotPassword ? (
@@ -344,14 +344,13 @@ const Auth = () => {
               </form>
             ) : (
               <form onSubmit={handleLogin} className="flex w-full flex-col gap-4">
-                <div className="relative"><Mail className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input type="email" autoComplete="email" value={loginData.email} onChange={(event) => setLoginData({ ...loginData, email: event.target.value })} placeholder="Email address" required className="!h-12 !w-full !rounded-xl !border !border-black/10 !bg-[#f4f5f2] px-5 pl-12 !text-[14px] !text-[#1a1a1a] outline-none placeholder:!text-[13px] placeholder:!text-[#777] focus:!ring-2 focus:!ring-[#f0b429]" /></div>
-                <div className="relative"><Lock className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input type={showPassword ? "text" : "password"} autoComplete="current-password" value={loginData.password} onChange={(event) => setLoginData({ ...loginData, password: event.target.value })} placeholder="Password" required className="!h-12 !w-full !rounded-xl !border !border-black/10 !bg-[#f4f5f2] px-5 pl-12 pr-16 !text-[14px] !text-[#1a1a1a] outline-none placeholder:!text-[13px] placeholder:!text-[#777] focus:!ring-2 focus:!ring-[#f0b429]" /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-4 top-1/2 z-10 -translate-y-1/2 !text-[#111111] hover:!text-[#333333]">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button></div>
-                <div className="relative"><IdCard className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input value={loginData.merchantId} onChange={(event) => setLoginData({ ...loginData, merchantId: event.target.value })} placeholder="Merchant ID or USV ID" required className="!h-12 !w-full !rounded-xl !border !border-black/10 !bg-[#f4f5f2] px-5 pl-12 !text-[14px] !text-[#1a1a1a] outline-none placeholder:!text-[13px] placeholder:!text-[#777] focus:!ring-2 focus:!ring-[#f0b429]" /></div>
+                <div className="relative"><Mail className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input type="email" autoComplete="email" value={loginData.email} onChange={(event) => setLoginData({ ...loginData, email: event.target.value })} placeholder="Email address" required className="!h-14 !w-full !rounded-xl !border !border-black/10 !bg-[#f4f5f2] px-5 pl-12 !text-[14px] !text-[#1a1a1a] outline-none placeholder:!text-[13px] placeholder:!text-[#777] focus:!ring-2 focus:!ring-[#f0b429]" /></div>
+                <div className="relative"><Lock className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input type={showPassword ? "text" : "password"} autoComplete="current-password" value={loginData.password} onChange={(event) => setLoginData({ ...loginData, password: event.target.value })} placeholder="Password" required className="!h-14 !w-full !rounded-xl !border !border-black/10 !bg-[#f4f5f2] px-5 pl-12 pr-16 !text-[14px] !text-[#1a1a1a] outline-none placeholder:!text-[13px] placeholder:!text-[#777] focus:!ring-2 focus:!ring-[#f0b429]" /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} style={{ color: "#000000" }} className="absolute right-4 top-1/2 z-10 -translate-y-1/2">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button></div>
+                <div className="relative"><IdCard className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input value={loginData.merchantId} onChange={(event) => setLoginData({ ...loginData, merchantId: event.target.value })} placeholder="Merchant ID or USV ID" required className="!h-14 !w-full !rounded-xl !border !border-black/10 !bg-[#f4f5f2] px-5 pl-12 !text-[14px] !text-[#1a1a1a] outline-none placeholder:!text-[13px] placeholder:!text-[#777] focus:!ring-2 focus:!ring-[#f0b429]" /></div>
                 <Button type="submit" disabled={isLoading} className="mt-1 !h-12 !w-full !rounded-xl !border !border-black/10 !bg-[#d6d6d0] p-3 !font-bold uppercase tracking-[0.15em] !text-[#1a1a1a] shadow-[0_4px_12px_rgba(0,0,0,0.18)] transition hover:!bg-[#f0b429] hover:!text-[#1e2320] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70">{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}LOGIN</Button>
                 <button type="button" onClick={() => setShowForgotPassword(true)} className="w-full rounded-xl border border-white/20 py-3 text-sm font-medium text-white/75 transition hover:border-white/40 hover:bg-white/10 hover:text-white">Forgot your password?</button>
               </form>
             )}
-            <div className="mt-6 border-t border-white/10 pt-4 text-center text-xs"><button onClick={() => window.location.assign(publicUrl("/"))} className="text-[#9dccff] transition hover:text-white">← PaySME website</button></div>
           </div>
         </section>
       </div>
