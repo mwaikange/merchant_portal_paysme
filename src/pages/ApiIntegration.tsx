@@ -773,7 +773,7 @@ const ApiIntegration = () => {
   );
 
   return <ProtectedRoute>
-      <div className="min-h-screen bg-paysme-gradient-start">
+      <div className="bg-paysme-gradient-start">
         <div className="p-8 px-12 bg-gray-100">
           <div className="mb-8">
             <p className="text-gray-600 mt-2">Generate payment snippets and hosted links for your products</p>
