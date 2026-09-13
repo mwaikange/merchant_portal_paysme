@@ -19,8 +19,9 @@ const allowedOrigins = new Set([
 
 const cors = (req: Request) => {
   const origin = req.headers.get("origin") || "";
+  const localDevelopmentOrigin = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
   return {
-    "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : merchantOrigin,
+    "Access-Control-Allow-Origin": allowedOrigins.has(origin) || localDevelopmentOrigin ? origin : merchantOrigin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Vary": "Origin",
