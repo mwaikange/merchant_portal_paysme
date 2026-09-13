@@ -315,7 +315,7 @@ const Auth = () => {
             const positions = [
               "left-[-50px] top-[-30px] h-[280px] w-[280px]",
               "left-[22%] top-[12%] h-[320px] w-[320px]",
-              "right-[17%] top-[4%] h-[180px] w-[180px]",
+              "right-[25%] top-[12%] h-[270px] w-[270px]",
               "left-[5%] bottom-[15%] h-[260px] w-[260px]",
               "right-[27%] bottom-[8%] h-[280px] w-[280px]",
               "right-[2%] top-[37%] h-[250px] w-[250px]",
