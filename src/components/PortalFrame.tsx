@@ -164,7 +164,7 @@ export function PortalFrame({ children }: { children: ReactNode }) {
     : "Payments and portal sections are disabled because PaySME fees are overdue. Use the Pay Now button on Overview to settle the outstanding balance and restore access.";
 
   return (
-    <div className="portal-frame portal-frame-scale-90 h-screen overflow-hidden" style={{ background: brand.page, color: brand.text }}>
+    <div className="portal-frame portal-frame-scale-90 h-full overflow-hidden" style={{ background: brand.page, color: brand.text }}>
       {signingOut && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm">
           <div className="rounded-xl border border-yellow-400/40 bg-[#222922] px-8 py-7 text-center shadow-2xl">
@@ -194,7 +194,7 @@ export function PortalFrame({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <div style={{ display: "flex", alignItems: "stretch", height: "calc(100vh - 61px)", minHeight: 0, overflow: "hidden", background: brand.page }}>
+      <div style={{ display: "flex", alignItems: "stretch", height: "calc(100% - 61px)", minHeight: 0, overflow: "hidden", background: brand.page }}>
         <aside
           className="flex flex-col p-3"
           style={{

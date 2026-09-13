@@ -50,16 +50,20 @@
 
 @media (min-width: 1024px) {
   .portal-frame-scale-90 {
-    zoom: 0.9;
-    width: 111.111111%;
-    max-width: 111.111111%;
+    width: 100%;
+    max-width: 100%;
     overflow-x: hidden;
+  }
+
+  body:has(.portal-frame-scale-90) {
+    zoom: 0.9;
   }
 }
 
 html,
 body,
 #root {
+  height: 100%;
   overflow-x: hidden;
 }
 
