@@ -307,31 +307,31 @@ const Auth = () => {
   const dedicatedMerchantLogin = activeTab !== "signup" && (window.location.hostname === new URL(merchantOrigin).hostname || isLocalHost);
   if (dedicatedMerchantLogin) {
     return (
-      <div className="grid min-h-screen bg-[#1b211d] text-white lg:grid-cols-[minmax(0,1.9fr)_minmax(390px,0.9fr)]">
-        <section className="relative hidden min-h-screen overflow-hidden border-b-[28px] border-[#f6b51f] lg:block">
+      <div className="grid min-h-screen bg-[#1e2320] text-white lg:grid-cols-[minmax(0,1fr)_420px]">
+        <section className="relative hidden min-h-screen overflow-hidden border-b-[28px] border-[#f0b429] bg-[#1e2320] lg:block">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(246,196,49,0.05),transparent_55%)]" />
           {merchantImages.map((image, index) => {
             const positions = [
-              "-left-14 -top-20 h-80 w-80",
-              "left-[17%] top-[13%] h-[390px] w-[390px]",
-              "right-[31%] -top-20 h-72 w-72",
-              "-left-16 bottom-[8%] h-72 w-72",
-              "right-[20%] bottom-[3%] h-72 w-72",
+              "left-[-30px] top-[-30px] h-[200px] w-[200px]",
+              "left-[160px] top-[40px] h-[310px] w-[310px]",
+              "right-[38%] top-[-20px] h-[180px] w-[180px]",
+              "left-[-10px] bottom-[12%] h-[230px] w-[230px]",
+              "right-[30%] bottom-[8%] h-[270px] w-[270px]",
             ];
-            return <img key={image} src={image} alt="" className={`absolute rounded-full border-4 border-[#293129] object-cover shadow-2xl ${positions[index]}`} />;
+            return <img key={image} src={image} alt="" className={`absolute rounded-full border-[3px] border-white/[0.06] object-cover brightness-[0.88] saturate-[0.95] ${positions[index]}`} />;
           })}
           <div className="absolute bottom-16 left-12 z-10">
-            <img src={paysmeLogoMain} alt="PaySME" className="h-16 w-auto" />
-            <p className="mt-5 text-xs uppercase tracking-[0.28em] text-white/65">Merchant payment portal</p>
-            <p className="mt-2 text-[10px] uppercase tracking-[0.24em] text-white/35">Secure access · PaySME</p>
+            <img src={paysmeLogoMain} alt="PaySME" className="h-[52px] w-auto" />
+            <p className="mt-3 text-[0.7rem] font-medium uppercase tracking-[0.18em] text-[#8a9188]">Merchants &amp; vendor management portal</p>
+            <p className="mt-1 text-[0.65rem] uppercase tracking-[0.18em] text-[#8a9188]/60">PaySME Solutions CC | All rights reserved</p>
           </div>
         </section>
 
-        <section className="flex min-h-screen items-center justify-center bg-[#242a26] px-7 py-10 lg:px-12">
+        <section className="flex min-h-screen flex-col items-center justify-center bg-[#2a2e2b] px-7 py-10 lg:px-12 lg:py-14">
           <div className="w-full max-w-md">
             <div className="mb-10 text-center">
-              <img src={paysmeLogoMain} alt="PaySME" className="mx-auto h-16 w-auto" />
-              <p className="mt-6 text-xs uppercase tracking-[0.27em] text-[#c7ae76]">Merchant payment portal</p>
+              <img src={paysmeLogoMain} alt="PaySME" className="mx-auto mb-4 h-[68px] w-auto" />
+              <p className="text-[0.7rem] font-medium uppercase tracking-[0.18em] text-[#8a9188]">Merchants &amp; vendor management portal</p>
             </div>
 
             {showForgotPassword ? (
@@ -343,15 +343,15 @@ const Auth = () => {
                 <Button type="button" variant="ghost" onClick={() => setShowForgotPassword(false)} className="w-full text-white/65">Back to login</Button>
               </form>
             ) : (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="relative"><Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input type="email" autoComplete="email" value={loginData.email} onChange={(event) => setLoginData({ ...loginData, email: event.target.value })} placeholder="Email address" required className="h-14 rounded-xl border-0 bg-[#edf3ff] pl-12 text-black" /></div>
-                <div className="relative"><Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input type={showPassword ? "text" : "password"} autoComplete="current-password" value={loginData.password} onChange={(event) => setLoginData({ ...loginData, password: event.target.value })} placeholder="Password" required className="h-14 rounded-xl border-0 bg-[#edf3ff] px-12 text-black" /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button></div>
-                <div className="relative"><IdCard className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input value={loginData.merchantId} onChange={(event) => setLoginData({ ...loginData, merchantId: event.target.value })} placeholder="Merchant ID or USV ID" required className="h-14 rounded-xl border-0 bg-[#edf3ff] pl-12 text-black" /></div>
-                <Button type="submit" disabled={isLoading} className="h-14 w-full rounded-xl bg-[#deded8] font-bold tracking-[0.2em] text-[#151815] hover:bg-white">{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}LOGIN</Button>
+              <form onSubmit={handleLogin} className="flex w-full flex-col gap-4">
+                <div className="relative"><Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input type="email" autoComplete="email" value={loginData.email} onChange={(event) => setLoginData({ ...loginData, email: event.target.value })} placeholder="email" required className="h-14 w-full rounded-xl border-0 bg-[#d6d6d0] px-5 pl-12 text-[14px] text-[#1a1a1a] outline-none placeholder:text-[13px] placeholder:text-[#777] focus:ring-2 focus:ring-[#f0b429]" /></div>
+                <div className="relative"><Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input type={showPassword ? "text" : "password"} autoComplete="current-password" value={loginData.password} onChange={(event) => setLoginData({ ...loginData, password: event.target.value })} placeholder="password" required className="h-14 w-full rounded-xl border-0 bg-[#d6d6d0] px-5 pr-12 text-[14px] text-[#1a1a1a] outline-none placeholder:text-[13px] placeholder:text-[#777] focus:ring-2 focus:ring-[#f0b429]" /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-white/80">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button></div>
+                <div className="relative"><IdCard className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input value={loginData.merchantId} onChange={(event) => setLoginData({ ...loginData, merchantId: event.target.value })} placeholder="Merchant ID or USV ID" required className="h-14 w-full rounded-xl border-0 bg-[#d6d6d0] px-5 pl-12 text-[14px] text-[#1a1a1a] outline-none placeholder:text-[13px] placeholder:text-[#777] focus:ring-2 focus:ring-[#f0b429]" /></div>
+                <Button type="submit" disabled={isLoading} className="mt-2 h-14 w-full rounded-xl bg-[#d6d6d0] p-[18px] font-bold uppercase tracking-[0.15em] text-[#1a1a1a] transition hover:bg-[#f0b429] hover:text-[#1e2320] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70">{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}LOGIN</Button>
                 <button type="button" onClick={() => setShowForgotPassword(true)} className="w-full pt-2 text-sm text-white/60 underline underline-offset-4 hover:text-white">Forgot your password?</button>
               </form>
             )}
-            <div className="mt-9 flex items-center justify-between border-t border-white/10 pt-6 text-xs text-white/45"><button onClick={() => window.location.assign(publicUrl("/"))} className="hover:text-white">← PaySME website</button><button onClick={() => window.location.assign(publicUrl("/signup"))} className="text-[#f6c431] hover:text-[#ffd95c]">Create merchant account</button></div>
+            <div className="mt-9 border-t border-white/10 pt-6 text-center text-xs text-white/45"><button onClick={() => window.location.assign(publicUrl("/"))} className="hover:text-white">← PaySME website</button></div>
           </div>
         </section>
       </div>

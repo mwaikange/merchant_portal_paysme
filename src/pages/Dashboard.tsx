@@ -28,6 +28,7 @@ import { formatNad } from "@/lib/formatters";
 import { normalizeNamibianMobile } from "@/lib/validations";
 import { useBulkSmsAccess } from "@/hooks/useBulkSmsAccess";
 import { PwaInstallControl } from "@/components/PwaInstallControl";
+import { merchantUrl } from "@/lib/portalDomains";
 
 const paysmeLogoSmall = "/lovable-uploads/898057d0-cfa9-48a0-8977-fa341f10e70b.png";
 
@@ -267,7 +268,7 @@ const Dashboard = () => {
     setSigningOut(true);
     window.setTimeout(async () => {
       await signOut();
-      window.location.replace("/auth");
+      window.location.replace(merchantUrl("/auth"));
     }, 3000);
   };
 
