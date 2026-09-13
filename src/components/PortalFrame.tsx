@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useBulkSmsAccess } from "@/hooks/useBulkSmsAccess";
-import { PwaInstallControl } from "@/components/PwaInstallControl";
 import { merchantUrl } from "@/lib/portalDomains";
 
 const paysmeLogoSmall = "/lovable-uploads/898057d0-cfa9-48a0-8977-fa341f10e70b.png";
@@ -193,9 +192,7 @@ export function PortalFrame({ children }: { children: ReactNode }) {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <PwaInstallControl compact />
-          </div>
+          <div aria-hidden="true" />
         </div>
       </header>
 
@@ -207,7 +204,7 @@ export function PortalFrame({ children }: { children: ReactNode }) {
             minWidth: 238,
             minHeight: 0,
             height: "100%",
-            overflowY: "auto",
+            overflowY: "hidden",
             background: brand.sidebar,
             borderRight: `1px solid ${brand.faint}`,
             position: "relative",

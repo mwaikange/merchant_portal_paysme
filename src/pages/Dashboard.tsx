@@ -27,7 +27,6 @@ import { useToast } from "@/hooks/use-toast";
 import { formatNad } from "@/lib/formatters";
 import { normalizeNamibianMobile } from "@/lib/validations";
 import { useBulkSmsAccess } from "@/hooks/useBulkSmsAccess";
-import { PwaInstallControl } from "@/components/PwaInstallControl";
 import { merchantUrl } from "@/lib/portalDomains";
 
 const paysmeLogoSmall = "/lovable-uploads/898057d0-cfa9-48a0-8977-fa341f10e70b.png";
@@ -390,7 +389,7 @@ const Dashboard = () => {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen text-white" style={{ background: brand.page, color: brand.text }}>
+      <div className="h-screen overflow-hidden text-white" style={{ background: brand.page, color: brand.text }}>
         {signingOut && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm">
             <div className="rounded-xl border border-yellow-400/40 bg-[#222922] px-8 py-7 text-center shadow-2xl">
@@ -401,7 +400,7 @@ const Dashboard = () => {
           </div>
         )}
         <header
-          className="sticky top-0 z-30 px-4 py-2.5 backdrop-blur"
+          className="relative z-30 h-[61px] shrink-0 px-4 py-2.5 backdrop-blur"
           style={{ background: "rgba(34,41,34,0.97)", borderBottom: `1px solid rgba(246,196,49,0.25)` }}
         >
           <div className="flex items-center justify-between gap-4">
@@ -416,32 +415,28 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <PwaInstallControl />
-              <Button style={{ background: brand.yellow, color: brand.page }} onClick={handleSignOut} disabled={signingOut}>
-                {signingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
-                {signingOut ? "Signing Out" : "Sign Out"}
-              </Button>
-            </div>
+            <div aria-hidden="true" />
           </div>
         </header>
 
-        <div style={{ display: "flex", alignItems: "stretch", minHeight: "calc(100vh - 61px)", background: brand.page }}>
+        <div style={{ display: "flex", alignItems: "stretch", height: "calc(100vh - 61px)", minHeight: 0, overflow: "hidden", background: brand.page }}>
           <aside
-            className="p-3"
+            className="flex flex-col p-3"
             style={{
               width: 238,
               minWidth: 238,
-              minHeight: "calc(100vh - 61px)",
+              minHeight: 0,
+              height: "100%",
+              overflowY: "hidden",
               background: brand.sidebar,
               borderRight: `1px solid ${brand.faint}`,
-              position: "sticky",
-              top: 61,
+              position: "relative",
+              top: 0,
               alignSelf: "flex-start",
             }}
           >
             <div className="mb-3 rounded-md p-3" style={{ border: `1px solid rgba(246,196,49,0.2)`, background: "rgba(0,0,0,0.2)" }}>
-              <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: brand.yellow }}>Merchant Portal</p>
+              <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: brand.yellow }}>PaySME Merchant Management Portal</p>
               <p className="mt-1 truncate text-sm font-semibold" style={{ color: brand.text }}>{merchant?.business_name || "PaySME"}</p>
               <p className="mt-1 truncate text-xs" style={{ color: brand.muted }}>{merchant?.vendor_id || merchant?.email}</p>
             </div>
@@ -513,9 +508,15 @@ const Dashboard = () => {
                 </p>
               </div>
             )}
+            <div className="mt-auto pt-6">
+              <Button type="button" className="w-full" style={{ background: brand.yellow, color: brand.page }} onClick={handleSignOut} disabled={signingOut}>
+                {signingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
+                {signingOut ? "Signing Out" : "Sign Out"}
+              </Button>
+            </div>
           </aside>
 
-          <main className="flex-1 p-5 lg:p-8" style={{ background: brand.page, minWidth: 0 }}>
+          <main className="h-full min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-5 lg:p-8" style={{ background: brand.page }}>
             <div className="content-scale-75-shell">
               <div className="content-scale-75">
                 {loading ? (
