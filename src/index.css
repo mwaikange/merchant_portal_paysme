@@ -55,9 +55,14 @@
     overflow-x: hidden;
   }
 
-  body:has(.portal-frame-scale-90) {
+body:has(.portal-frame-scale-90) {
     zoom: 0.9;
   }
+}
+
+body:has(.portal-frame) {
+  overflow: hidden;
+  background: #151815;
 }
 
 html,

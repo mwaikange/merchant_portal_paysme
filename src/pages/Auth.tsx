@@ -24,6 +24,7 @@ const merchantImages = [
   "/pay-home/merchants/merchant-bakery-ai.png",
   "/pay-home/merchants/merchant-grill-ai.png",
 ];
+const dedicatedMerchantImages = [...merchantImages, "/pay-home/merchants/merchant-hairdresser.png"];
 const accountCreationEnabled = true;
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
@@ -310,13 +311,14 @@ const Auth = () => {
       <div className="grid min-h-screen bg-[#1e2320] text-white lg:h-screen lg:grid-cols-[minmax(0,1fr)_400px] lg:overflow-hidden">
         <section className="relative hidden min-h-screen overflow-hidden border-b-[20px] border-[#f0b429] bg-[#1e2320] lg:block lg:h-screen">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(246,196,49,0.05),transparent_55%)]" />
-          {merchantImages.map((image, index) => {
+          {dedicatedMerchantImages.map((image, index) => {
             const positions = [
-              "left-[-24px] top-[24px] h-[180px] w-[180px]",
-              "left-[27%] top-[16%] h-[240px] w-[240px]",
-              "right-[18%] top-[8%] h-[175px] w-[175px]",
-              "left-[8%] bottom-[18%] h-[200px] w-[200px]",
-              "right-[36%] bottom-[12%] h-[220px] w-[220px]",
+              "left-[-50px] top-[-30px] h-[280px] w-[280px]",
+              "left-[22%] top-[12%] h-[320px] w-[320px]",
+              "right-[17%] top-[4%] h-[180px] w-[180px]",
+              "left-[5%] bottom-[15%] h-[260px] w-[260px]",
+              "right-[27%] bottom-[8%] h-[280px] w-[280px]",
+              "right-[2%] top-[37%] h-[250px] w-[250px]",
             ];
             return <img key={image} src={image} alt="" className={`absolute rounded-full border-[3px] border-white/[0.06] object-cover brightness-[0.88] saturate-[0.95] ${positions[index]}`} />;
           })}

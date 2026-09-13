@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle, KeyRound, Loader2, MessageSquare, ShieldCheck, Trash2 } from "lucide-react";
+import { CheckCircle, KeyRound, Loader2, Mail, ShieldCheck, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -22,16 +22,16 @@ const getFactors = (data: MfaFactorData): VerifiedMfaFactor[] => {
 };
 
 export function MfaManager() {
-  const { merchantSecurity, refreshMerchantSecurity } = useAuth();
+  const { merchantSecurity, refreshMerchantSecurity, user } = useAuth();
   const { toast } = useToast();
   const [factors, setFactors] = useState<VerifiedMfaFactor[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
+  const [emailCode, setEmailCode] = useState("");
+  const [emailCodeSent, setEmailCodeSent] = useState(false);
+  const [emailBusy, setEmailBusy] = useState(false);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
-  const phoneMfaAvailable = import.meta.env.VITE_PHONE_MFA_ENABLED === "true";
-
   const load = useCallback(async () => {
     const { data, error } = await supabase.auth.mfa.listFactors();
     if (error) toast({ title: "MFA status unavailable", description: error.message, variant: "destructive" });
@@ -44,10 +44,19 @@ export function MfaManager() {
   const enroll = async (type: "totp" | "phone") => {
     setBusy(true);
     try {
+      if (type === "totp") {
+        const { data: existingData } = await supabase.auth.mfa.listFactors();
+        const existingTotp = (existingData?.totp || []).find((factor) => factor.status === "unverified");
+        if (existingTotp) await supabase.auth.mfa.unenroll({ factorId: existingTotp.id });
+        const verifiedTotp = (existingData?.totp || []).find((factor) => factor.status === "verified");
+        if (verifiedTotp) {
+          toast({ title: "Authenticator already enrolled", description: "Use the existing authenticator code to verify access, or remove it after completing a fresh MFA challenge." });
+          return;
+        }
+      }
       const options = type === "totp"
         ? { factorType: "totp" as const, friendlyName: "PaySME Authenticator", issuer: "PaySME Merchant" }
-        : { factorType: "phone" as const, friendlyName: "PaySME SMS", phone: phone.trim() };
-      if (type === "phone" && !/^\+[1-9]\d{7,14}$/.test(phone.trim())) throw new Error("Enter the verified mobile number in international format, for example +264811234567.");
+        : { factorType: "phone" as const, friendlyName: "PaySME SMS", phone: "" };
       const { data, error } = await supabase.auth.mfa.enroll(options);
       if (error) throw error;
       const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: data.id });
@@ -57,6 +66,39 @@ export function MfaManager() {
     } catch (error: unknown) {
       toast({ title: "MFA enrollment could not start", description: error instanceof Error ? error.message : "MFA enrollment failed", variant: "destructive" });
     } finally { setBusy(false); }
+  };
+
+  const sendEmailCode = async () => {
+    const email = user?.email?.trim();
+    if (!email) {
+      toast({ title: "Email unavailable", description: "Your signed-in merchant account has no email address.", variant: "destructive" });
+      return;
+    }
+    setEmailBusy(true);
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    setEmailBusy(false);
+    if (error) {
+      toast({ title: "Email code could not be sent", description: error.message, variant: "destructive" });
+      return;
+    }
+    setEmailCodeSent(true);
+    toast({ title: "Email code sent", description: `A verification code was sent to ${email}.` });
+  };
+
+  const verifyEmailCode = async () => {
+    const email = user?.email?.trim();
+    if (!email || !/^\d{6}$/.test(emailCode)) return;
+    setEmailBusy(true);
+    const { error } = await supabase.auth.verifyOtp({ email, token: emailCode, type: "email" });
+    setEmailBusy(false);
+    if (error) {
+      toast({ title: "Email code not accepted", description: "The code is invalid, expired, or already used.", variant: "destructive" });
+      return;
+    }
+    setEmailCode("");
+    setEmailCodeSent(false);
+    await refreshMerchantSecurity();
+    toast({ title: "Email verification complete", description: "Your email code was accepted." });
   };
 
   const verifyEnrollment = async () => {
@@ -110,7 +152,7 @@ export function MfaManager() {
 
       {!!factors.length && <div className="space-y-3">{factors.map((factor) => (
         <div key={factor.id} className="flex items-center justify-between rounded-lg border border-white/10 bg-[#1b211d] p-4">
-          <div className="flex items-center gap-3">{factor.factor_type === "phone" ? <MessageSquare className="h-5 w-5 text-[#f6c431]" /> : <KeyRound className="h-5 w-5 text-[#f6c431]" />}<div><p className="font-medium">{factor.factor_type === "phone" ? "SMS verification" : "Authenticator app"}</p><p className="text-xs text-white/55">{factor.phone || factor.friendly_name || "Verified"}</p></div></div>
+          <div className="flex items-center gap-3">{factor.factor_type === "phone" ? <Mail className="h-5 w-5 text-[#f6c431]" /> : <KeyRound className="h-5 w-5 text-[#f6c431]" />}<div><p className="font-medium">{factor.factor_type === "phone" ? "Phone verification" : "Authenticator app"}</p><p className="text-xs text-white/55">{factor.phone || factor.friendly_name || "Verified"}</p></div></div>
           <Button type="button" variant="outline" disabled={busy || factors.length <= 1} onClick={() => remove(factor)} className="border-red-400/35 text-red-200"><Trash2 className="mr-2 h-4 w-4" />Remove</Button>
         </div>
       ))}</div>}
@@ -126,10 +168,10 @@ export function MfaManager() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-white/10 bg-[#1b211d] p-5"><KeyRound className="mb-3 h-7 w-7 text-[#f6c431]" /><h3 className="font-semibold">Authenticator app</h3><p className="mt-2 text-sm text-white/60">Works with Google Authenticator, Microsoft Authenticator and other TOTP apps.</p><Button className="mt-4 bg-[#f6c431] text-black" disabled={busy} onClick={() => enroll("totp")}>Enroll authenticator</Button></div>
-          <div className="rounded-xl border border-white/10 bg-[#1b211d] p-5"><MessageSquare className="mb-3 h-7 w-7 text-[#f6c431]" /><h3 className="font-semibold">SMS verification</h3><p className="mt-2 text-sm text-white/60">{phoneMfaAvailable ? "Uses PaySME’s configured SMS provider. The number is verified before activation." : "Available after PaySME activates Supabase Advanced Phone MFA. Authenticator MFA is available now."}</p><Input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+264811234567" className="mt-4 bg-white text-black" disabled={!phoneMfaAvailable} /><Button className="mt-3 bg-[#f6c431] text-black" disabled={busy || !phoneMfaAvailable} onClick={() => enroll("phone")}>Enroll SMS</Button></div>
+          <div className="rounded-xl border border-white/10 bg-[#1b211d] p-5"><Mail className="mb-3 h-7 w-7 text-[#f6c431]" /><h3 className="font-semibold">Email verification</h3><p className="mt-2 text-sm text-white/60">Receive a one-time verification code at your signed-in merchant email address.</p>{emailCodeSent ? <><Input value={emailCode} onChange={(event) => setEmailCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit email code" inputMode="numeric" autoComplete="one-time-code" className="mt-4 bg-white text-black" /><div className="mt-3 flex gap-2"><Button className="bg-[#f6c431] text-black" disabled={emailBusy || !/^\d{6}$/.test(emailCode)} onClick={verifyEmailCode}>Verify email</Button><Button variant="outline" disabled={emailBusy} onClick={sendEmailCode}>Resend</Button></div></> : <Button className="mt-4 bg-[#f6c431] text-black" disabled={emailBusy} onClick={sendEmailCode}>Send email code</Button>}</div>
         </div>
       )}
-      <p className="text-xs leading-5 text-white/45">Codes expire and cannot be replayed. SMS resend and attempt limits are enforced by the configured authentication provider. PaySME never stores or logs your OTP or authenticator secret.</p>
+      <p className="text-xs leading-5 text-white/45">Codes expire and cannot be replayed. Email resend and attempt limits are enforced by the configured authentication provider. PaySME never stores or logs your OTP or authenticator secret.</p>
     </div>
   );
 }
