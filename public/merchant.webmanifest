@@ -10,7 +10,6 @@
   "theme_color": "#222922",
   "orientation": "landscape",
   "icons": [
-    { "src": "/pwa-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "/pwa-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "/pwa-logo.png", "sizes": "1280x1280", "type": "image/png", "purpose": "any maskable" }
   ]
 }

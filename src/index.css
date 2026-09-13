@@ -40,6 +40,21 @@
   min-height: calc(100% / 0.75);
 }
 
+@media (min-width: 1024px) {
+  .portal-frame-scale-90 {
+    zoom: 0.9;
+    width: 111.111111%;
+    max-width: 111.111111%;
+    overflow-x: hidden;
+  }
+}
+
+html,
+body,
+#root {
+  overflow-x: hidden;
+}
+
 .portal-frame .portal-frame-content > .min-h-screen > header,
 .portal-frame .portal-frame-content > .min-h-screen > main > header,
 .portal-frame .portal-frame-content > .min-h-screen > div > header {

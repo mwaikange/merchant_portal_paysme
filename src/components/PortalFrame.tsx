@@ -11,7 +11,6 @@ import {
   Loader2,
   Plug,
   QrCode,
-  RefreshCw,
   Settings,
   ReceiptText,
   ShieldCheck,
@@ -80,7 +79,6 @@ export function PortalFrame({ children }: { children: ReactNode }) {
   const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
   const [billingLoading, setBillingLoading] = useState(true);
   const [lockNoticeReason, setLockNoticeReason] = useState<"billing" | "tax" | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const staffDeniedPaths = new Set(["/portal/tax-settings", "/portal/kyc", "/portal/security-access", "/portal/api-integration"]);
@@ -156,11 +154,6 @@ export function PortalFrame({ children }: { children: ReactNode }) {
     }, 3000);
   };
 
-  const handleManualRefresh = () => {
-    setRefreshing(true);
-    window.location.reload();
-  };
-
   const showLockNotice = (reason: "billing" | "tax") => {
     setLockNoticeReason(reason);
     window.setTimeout(() => setLockNoticeReason(null), 4200);
@@ -172,7 +165,7 @@ export function PortalFrame({ children }: { children: ReactNode }) {
     : "Payments and portal sections are disabled because PaySME fees are overdue. Use the Pay Now button on Overview to settle the outstanding balance and restore access.";
 
   return (
-    <div className="portal-frame min-h-screen" style={{ background: brand.page, color: brand.text }}>
+    <div className="portal-frame portal-frame-scale-90 min-h-screen" style={{ background: brand.page, color: brand.text }}>
       {signingOut && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm">
           <div className="rounded-xl border border-yellow-400/40 bg-[#222922] px-8 py-7 text-center shadow-2xl">
@@ -200,21 +193,6 @@ export function PortalFrame({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-2">
             <PwaInstallControl compact />
-            <Button
-              type="button"
-              variant="outline"
-              aria-label="Refresh portal"
-              title="Refresh portal"
-              disabled={refreshing}
-              onClick={handleManualRefresh}
-              style={{
-                borderColor: "rgba(246,196,49,0.5)",
-                background: "rgba(246,196,49,0.08)",
-                color: brand.yellow,
-              }}
-            >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-            </Button>
           </div>
         </div>
       </header>
@@ -226,6 +204,8 @@ export function PortalFrame({ children }: { children: ReactNode }) {
             width: 238,
             minWidth: 238,
             minHeight: "calc(100vh - 61px)",
+            height: "calc(100vh - 61px)",
+            overflowY: "auto",
             background: brand.sidebar,
             borderRight: `1px solid ${brand.faint}`,
             position: "sticky",
