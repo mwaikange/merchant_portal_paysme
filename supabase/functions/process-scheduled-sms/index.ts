@@ -178,9 +178,19 @@ Deno.serve(async (req) => {
           destination: row.user_mobile,
         }));
 
-      if (messages.length === 0) continue;
+      const rowIds = rows.map(row => row.id);
+      if (messages.length === 0) {
+        failed += rowIds.length;
+        await supabase
+          .from("bulk_subscribers")
+          .update({ sms_status: "failed" })
+          .in("id", rowIds);
+        console.error("Scheduled SMS batch has no valid recipient rows", { merchantId, rowIds });
+        continue;
+      }
 
       const { data: smsResponse, error: smsError } = await supabase.functions.invoke("send-sms", {
+        headers: { Authorization: `Bearer ${serviceRoleKey}` },
         body: {
           action: "send_bulk",
           payload: {
@@ -191,7 +201,6 @@ Deno.serve(async (req) => {
         },
       });
 
-      const rowIds = rows.map(row => row.id);
       if (smsError || !smsResponse?.ok || Number(smsResponse?.sent_count || 0) < messages.length) {
         failed += rowIds.length;
         await supabase
