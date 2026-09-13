@@ -13,7 +13,6 @@ const publishInstallState = () => installSubscribers.forEach((subscriber) => sub
 
 if (typeof window !== "undefined") {
   window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
     savedPrompt = event as InstallPrompt;
     publishInstallState();
   });

@@ -389,7 +389,7 @@ const Dashboard = () => {
 
   return (
     <ProtectedRoute>
-      <div className="h-screen overflow-hidden text-white" style={{ background: brand.page, color: brand.text }}>
+      <div className="portal-frame portal-frame-scale-90 h-screen overflow-hidden text-white" style={{ background: brand.page, color: brand.text }}>
         {signingOut && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm">
             <div className="rounded-xl border border-yellow-400/40 bg-[#222922] px-8 py-7 text-center shadow-2xl">

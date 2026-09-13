@@ -34,9 +34,9 @@
 }
 
 .content-scale-75 {
-  transform: scale(0.75);
+  transform: none;
   transform-origin: top left;
-  width: calc(100% / 0.75);
+  width: 100%;
   min-height: 0;
 }
 
