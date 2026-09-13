@@ -840,15 +840,15 @@ const handleSMSTopUp = async () => {
                   <div className="bg-gray-50 rounded-lg p-6 space-y-6">
                     {/* Total */}
                     <div className="text-center">
-                      <h4 className="text-sm font-medium text-gray-600 mb-1">Price before VAT</h4>
-                      <p className="text-3xl font-bold text-gray-900">
-                        {formatCurrency(smsTopUpPrice)}
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-gray-500">**Prices exclude VAT</p>
-                      <div className="mt-4 space-y-2 border-t pt-3 text-sm text-gray-700">
+                      <div className="space-y-2 text-sm text-gray-700">
+                        <div className="flex justify-between"><span>Price before VAT</span><strong>{formatCurrency(smsTopUpPrice)}</strong></div>
                         <div className="flex justify-between"><span>VAT (15%)</span><strong>{formatCurrency(smsVatAmount)}</strong></div>
-                        <div className="flex justify-between text-base"><span>Customer pays</span><strong>{formatCurrency(smsCustomerTotal)}</strong></div>
                       </div>
+                      <div className="mt-4 border-y border-gray-300 py-4">
+                        <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-600">Customer pays</h4>
+                        <p className="mt-1 text-3xl font-extrabold text-gray-900">{formatCurrency(smsCustomerTotal)}</p>
+                      </div>
+                      <p className="mt-2 text-xs font-semibold text-gray-500">Price includes 15% VAT</p>
                       {corporateSmsDiscountActive && (
                         <p className="mt-2 text-sm font-semibold text-emerald-700">
                           Corporate 25% Bulk SMS discount applied

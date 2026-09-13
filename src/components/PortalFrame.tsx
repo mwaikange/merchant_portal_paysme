@@ -151,7 +151,7 @@ export function PortalFrame({ children }: { children: ReactNode }) {
     setSigningOut(true);
     window.setTimeout(async () => {
       await signOut();
-      navigate("/");
+      window.location.replace("/auth");
     }, 3000);
   };
 
@@ -198,7 +198,7 @@ export function PortalFrame({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <PwaInstallControl />
+            <PwaInstallControl compact />
             <Button
               type="button"
               variant="outline"

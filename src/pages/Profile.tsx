@@ -52,7 +52,7 @@ const Profile = () => {
             </Card>
             <Card className="border-white/10 bg-[#222922] text-white">
               <CardHeader><CardTitle>Install PaySME Merchant</CardTitle><CardDescription className="text-white/60">Install this secure web app from the merchant portal URL.</CardDescription></CardHeader>
-              <CardContent className="space-y-3 text-sm text-white/60"><PwaInstallControl /><p>If the install button is unavailable, open your browser menu and choose “Install app” or “Create shortcut”. An internet connection, MFA, permissions and approved network are still required.</p></CardContent>
+              <CardContent className="space-y-3 text-sm text-white/60"><PwaInstallControl showInstalledState /><p>If your browser does not present the installer automatically, use its menu and choose “Install app” or “Create shortcut”. An internet connection, MFA, permissions and an approved network are still required.</p></CardContent>
             </Card>
           </div>
           <Card className="h-fit border-white/10 bg-[#222922] text-white">

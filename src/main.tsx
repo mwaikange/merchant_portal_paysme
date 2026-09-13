@@ -9,7 +9,7 @@ if (redirect) {
   const merchantPwaHost = location.hostname === "merchant.paysme.site" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
   if (!merchantPwaHost) document.getElementById("paysme-merchant-manifest")?.remove();
   if ("serviceWorker" in navigator && merchantPwaHost) {
-    window.addEventListener("load", () => navigator.serviceWorker.register("/merchant-sw.js", { scope: "/portal/" }));
+    window.addEventListener("load", () => navigator.serviceWorker.register("/merchant-sw.js", { scope: "/" }));
   }
   void import('./App.tsx').then(({ default: App }) => {
     createRoot(document.getElementById("root")!).render(<App />);

@@ -1,4 +1,4 @@
-const CACHE = "paysme-merchant-static-v1";
+const CACHE = "paysme-merchant-static-v2";
 const SAFE_STATIC = ["/merchant-offline.html", "/merchant.webmanifest", "/pwa-icon.svg", "/pwa-maskable.svg"];
 
 self.addEventListener("install", (event) => {

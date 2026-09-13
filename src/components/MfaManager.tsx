@@ -30,6 +30,7 @@ export function MfaManager() {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
+  const phoneMfaAvailable = import.meta.env.VITE_PHONE_MFA_ENABLED === "true";
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.auth.mfa.listFactors();
@@ -125,7 +126,7 @@ export function MfaManager() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-white/10 bg-[#1b211d] p-5"><KeyRound className="mb-3 h-7 w-7 text-[#f6c431]" /><h3 className="font-semibold">Authenticator app</h3><p className="mt-2 text-sm text-white/60">Works with Google Authenticator, Microsoft Authenticator and other TOTP apps.</p><Button className="mt-4 bg-[#f6c431] text-black" disabled={busy} onClick={() => enroll("totp")}>Enroll authenticator</Button></div>
-          <div className="rounded-xl border border-white/10 bg-[#1b211d] p-5"><MessageSquare className="mb-3 h-7 w-7 text-[#f6c431]" /><h3 className="font-semibold">SMS verification</h3><p className="mt-2 text-sm text-white/60">Uses the SMS provider configured for PaySME authentication. The number is verified before activation.</p><Input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+264811234567" className="mt-4 bg-white text-black" /><Button className="mt-3 bg-[#f6c431] text-black" disabled={busy} onClick={() => enroll("phone")}>Enroll SMS</Button></div>
+          <div className="rounded-xl border border-white/10 bg-[#1b211d] p-5"><MessageSquare className="mb-3 h-7 w-7 text-[#f6c431]" /><h3 className="font-semibold">SMS verification</h3><p className="mt-2 text-sm text-white/60">{phoneMfaAvailable ? "Uses PaySME’s configured SMS provider. The number is verified before activation." : "Available after PaySME activates Supabase Advanced Phone MFA. Authenticator MFA is available now."}</p><Input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+264811234567" className="mt-4 bg-white text-black" disabled={!phoneMfaAvailable} /><Button className="mt-3 bg-[#f6c431] text-black" disabled={busy || !phoneMfaAvailable} onClick={() => enroll("phone")}>Enroll SMS</Button></div>
         </div>
       )}
       <p className="text-xs leading-5 text-white/45">Codes expire and cannot be replayed. SMS resend and attempt limits are enforced by the configured authentication provider. PaySME never stores or logs your OTP or authenticator secret.</p>

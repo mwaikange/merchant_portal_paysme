@@ -1,10 +1,10 @@
 {
-  "id": "/portal/",
+  "id": "/",
   "name": "PaySME Merchant",
   "short_name": "PaySME",
   "description": "Secure PaySME merchant portal",
   "start_url": "/portal/dashboard?source=pwa",
-  "scope": "/portal/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#151815",
   "theme_color": "#222922",

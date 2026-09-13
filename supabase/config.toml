@@ -3,15 +3,32 @@ project_id = "zvoqrqdnuupdefsuiurt"
 # Production is the canonical destination for Auth confirmation links. Keep
 # local URLs only as explicit development allow-list entries.
 [auth]
-site_url = "https://paysme.site"
+site_url = "https://merchant.paysme.site"
 additional_redirect_urls = [
+  "https://merchant.paysme.site/**",
+  "https://merchant.paysme.site/auth",
+  "https://merchant.paysme.site/reset-password",
   "https://paysme.site/auth",
   "https://www.paysme.site/auth",
   "http://localhost:8080/auth",
   "http://localhost:8081/auth",
+  "http://localhost:8082/auth",
   "http://127.0.0.1:8080/auth",
-  "http://127.0.0.1:8081/auth"
+  "http://127.0.0.1:8081/auth",
+  "http://127.0.0.1:8082/auth"
 ]
+
+[auth.hook.send_sms]
+enabled = false
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.mfa.phone]
+enroll_enabled = false
+verify_enabled = false
+otp_length = 6
 
 [auth.email]
 enable_signup = true
@@ -20,6 +37,9 @@ enable_confirmations = true
 [auth.email.template.confirmation]
 subject = "Confirm your PaySME merchant account"
 content_path = "./supabase/templates/confirmation.html"
+
+[storage.vector]
+enabled = false
 
 [functions.webhooks-payments]
 verify_jwt = false
@@ -43,6 +63,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-sms]
+verify_jwt = false
+
+[functions.auth-send-sms]
 verify_jwt = false
 
 [functions.resolve-payment-code]

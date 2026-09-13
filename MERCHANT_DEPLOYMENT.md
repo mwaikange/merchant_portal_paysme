@@ -15,6 +15,7 @@ This repository is the standalone application for `https://merchant.paysme.site`
    - `VITE_MERCHANT_DOMAIN_ENABLED=true`
    - `VITE_MERCHANT_ORIGIN=https://merchant.paysme.site`
    - `VITE_PUBLIC_ORIGIN=https://www.paysme.site`
+   - `VITE_PHONE_MFA_ENABLED=false` (change only after activating Supabase Advanced Phone MFA)
 5. Do not place a Supabase service-role key or SMS-provider secret in a `VITE_` variable.
 
 ## Supabase Auth

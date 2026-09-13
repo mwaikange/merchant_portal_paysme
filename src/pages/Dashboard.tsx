@@ -267,7 +267,7 @@ const Dashboard = () => {
     setSigningOut(true);
     window.setTimeout(async () => {
       await signOut();
-      navigate("/");
+      window.location.replace("/auth");
     }, 3000);
   };
 
