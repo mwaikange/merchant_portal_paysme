@@ -191,7 +191,7 @@ export function PortalFrame({ children }: { children: ReactNode }) {
             <img src={paysmeLogoSmall} alt="PaySME" className="h-9 w-auto" />
             <div>
               <p className="text-xs uppercase tracking-[0.25em]" style={{ color: brand.yellow }}>
-                Merchant Portal
+                PaySME Merchant Management Portal
               </p>
               <p className="text-sm" style={{ color: brand.muted }}>
                 Welcome back, <span className="font-semibold" style={{ color: brand.text }}>{merchant?.business_name || merchant?.email}</span>
@@ -215,17 +215,13 @@ export function PortalFrame({ children }: { children: ReactNode }) {
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </Button>
-            <Button style={{ background: brand.yellow, color: brand.page }} onClick={handleSignOut} disabled={signingOut}>
-              {signingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
-              {signingOut ? "Signing Out" : "Sign Out"}
-            </Button>
           </div>
         </div>
       </header>
 
       <div style={{ display: "flex", alignItems: "stretch", minHeight: "calc(100vh - 61px)", background: brand.page }}>
         <aside
-          className="p-3"
+          className="flex flex-col p-3"
           style={{
             width: 238,
             minWidth: 238,
@@ -238,7 +234,7 @@ export function PortalFrame({ children }: { children: ReactNode }) {
           }}
         >
           <div className="mb-3 rounded-md p-3" style={{ border: `1px solid rgba(246,196,49,0.2)`, background: "rgba(0,0,0,0.2)" }}>
-            <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: brand.yellow }}>Merchant Portal</p>
+            <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: brand.yellow }}>PaySME Merchant Management Portal</p>
             <p className="mt-1 truncate text-sm font-semibold" style={{ color: brand.text }}>{merchant?.business_name || "PaySME"}</p>
             <p className="mt-1 truncate text-xs" style={{ color: brand.muted }}>{merchant?.vendor_id || merchant?.email}</p>
           </div>
@@ -307,6 +303,12 @@ export function PortalFrame({ children }: { children: ReactNode }) {
               </p>
             </div>
           )}
+          <div className="mt-auto pt-6">
+            <Button type="button" className="w-full" style={{ background: brand.yellow, color: brand.page }} onClick={handleSignOut} disabled={signingOut}>
+              {signingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
+              {signingOut ? "Signing Out" : "Sign Out"}
+            </Button>
+          </div>
         </aside>
 
         <main className="portal-frame-content flex-1 p-5 lg:p-8" style={{ background: brand.page, minWidth: 0 }}>

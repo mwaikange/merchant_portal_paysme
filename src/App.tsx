@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
@@ -40,6 +41,7 @@ import { PortalFrame } from "./components/PortalFrame";
 import { PortalDesktopGuard } from "./components/PortalDesktopGuard";
 import { TrackingConsentBanner } from "./components/TrackingConsent";
 import DesktopAccessRequired from "./pages/DesktopAccessRequired";
+import { merchantOrigin } from "./lib/portalDomains";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +52,21 @@ const PublicBrand = ({ children }: { children: ReactNode }) => (
 const PortalBrand = ({ children }: { children: ReactNode }) => (
   <PortalFrame>{children}</PortalFrame>
 );
+
+const MerchantAuthRoute = () => {
+  const location = useLocation();
+  const isMerchantHost = window.location.hostname === new URL(merchantOrigin).hostname || ["localhost", "127.0.0.1"].includes(window.location.hostname);
+  const isSignup = new URLSearchParams(location.search).get("tab")?.toLowerCase() === "signup";
+
+  useEffect(() => {
+    if (isMerchantHost) return;
+    const query = new URLSearchParams(location.search);
+    query.set("tab", "signup");
+    window.location.replace(isSignup ? `/sign-up?${query.toString()}` : `${merchantOrigin}/auth`);
+  }, [isMerchantHost, isSignup, location.search]);
+
+  return isMerchantHost ? <PublicBrand><Auth /></PublicBrand> : null;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -62,9 +79,11 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/desktop-required" element={<DesktopAccessRequired />} />
-            <Route path="/auth" element={<PublicBrand><Auth /></PublicBrand>} />
-            <Route path="/login" element={<PublicBrand><Auth /></PublicBrand>} />
-            <Route path="/signup" element={<Navigate to="/auth?tab=signup" replace />} />
+            <Route path="/auth" element={<MerchantAuthRoute />} />
+            <Route path="/login" element={<MerchantAuthRoute />} />
+            <Route path="/signup" element={<Navigate to="/sign-up?tab=signup" replace />} />
+            <Route path="/sign-up" element={<PublicBrand><Auth /></PublicBrand>} />
+            <Route path="/register" element={<Navigate to="/sign-up?tab=signup" replace />} />
             <Route path="/waitlist" element={<Waitlist />} />
             <Route path="/user_journeys" element={<UserJourneys />} />
             <Route path="/psp-sponsor" element={<PublicBrand><PspSponsor /></PublicBrand>} />

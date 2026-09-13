@@ -50,7 +50,7 @@ const Auth = () => {
   const [invitationPassword, setInvitationPassword] = useState("");
   const [invitationConfirm, setInvitationConfirm] = useState("");
   const [activeTab, setActiveTab] = useState(() =>
-    new URLSearchParams(window.location.search).get("tab")?.toLowerCase() === "signup" ? "signup" : "login"
+    new URLSearchParams(window.location.search).get("tab")?.toLowerCase() === "signup" || ["/sign-up", "/register"].includes(window.location.pathname) ? "signup" : "login"
   );
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [signupMobileTouched, setSignupMobileTouched] = useState(false);
@@ -322,7 +322,7 @@ const Auth = () => {
           })}
           <div className="absolute bottom-6 left-8 z-10">
             <img src={paysmeLogoMain} alt="PaySME" className="h-[52px] w-auto" />
-            <p className="mt-3 text-[0.7rem] font-medium uppercase tracking-[0.18em] text-[#8a9188]">Merchants Management Portal</p>
+            <p className="mt-3 text-[0.7rem] font-medium uppercase tracking-[0.18em] text-[#8a9188]">PaySME Merchant Management Portal</p>
             <p className="mt-1 text-[0.65rem] uppercase tracking-[0.18em] text-[#8a9188]/60">PaySME Solutions CC | All rights reserved</p>
           </div>
         </section>
@@ -331,7 +331,7 @@ const Auth = () => {
           <div className="w-full max-w-md">
             <div className="mb-6 text-center">
               <img src={paysmeLogoMain} alt="PaySME" className="mx-auto mb-3 h-[56px] w-auto" />
-              <p className="text-[0.7rem] font-medium uppercase tracking-[0.18em] text-[#8a9188]">Merchants Management Portal</p>
+              <p className="text-[0.7rem] font-medium uppercase tracking-[0.18em] text-[#8a9188]">PaySME Merchant Management Portal</p>
             </div>
 
             {showForgotPassword ? (
