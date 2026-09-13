@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "PaySME Merchant",
-  "short_name": "PaySME",
+  "name": "PaySME Merchant Management Portal",
+  "short_name": "PaySME Merchant",
   "description": "Secure PaySME merchant portal",
   "start_url": "/portal/dashboard?source=pwa",
   "scope": "/",
