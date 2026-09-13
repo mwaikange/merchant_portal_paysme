@@ -164,8 +164,10 @@ export function PortalFrame({ children }: { children: ReactNode }) {
     ? "Please wait while PaySME confirms this merchant account is in good standing."
     : "Payments and portal sections are disabled because PaySME fees are overdue. Use the Pay Now button on Overview to settle the outstanding balance and restore access.";
 
+  const isStandalonePwa = typeof window !== "undefined" && (window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+
   return (
-    <div className="portal-frame portal-frame-scale-90 min-h-screen" style={{ background: brand.page, color: brand.text }}>
+    <div className={`portal-frame ${isStandalonePwa ? "portal-frame-scale-90" : ""} h-screen overflow-hidden`} style={{ background: brand.page, color: brand.text }}>
       {signingOut && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm">
           <div className="rounded-xl border border-yellow-400/40 bg-[#222922] px-8 py-7 text-center shadow-2xl">
@@ -176,7 +178,7 @@ export function PortalFrame({ children }: { children: ReactNode }) {
         </div>
       )}
       <header
-        className="sticky top-0 z-30 px-4 py-2.5 backdrop-blur"
+        className="relative z-30 h-[61px] shrink-0 px-4 py-2.5 backdrop-blur"
         style={{ background: "rgba(34,41,34,0.97)", borderBottom: `1px solid rgba(246,196,49,0.25)` }}
       >
         <div className="flex items-center justify-between gap-4">
@@ -197,19 +199,19 @@ export function PortalFrame({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <div style={{ display: "flex", alignItems: "stretch", minHeight: "calc(100vh - 61px)", background: brand.page }}>
+      <div style={{ display: "flex", alignItems: "stretch", height: "calc(100vh - 61px)", minHeight: 0, overflow: "hidden", background: brand.page }}>
         <aside
           className="flex flex-col p-3"
           style={{
             width: 238,
             minWidth: 238,
-            minHeight: "calc(100vh - 61px)",
-            height: "calc(100vh - 61px)",
+            minHeight: 0,
+            height: "100%",
             overflowY: "auto",
             background: brand.sidebar,
             borderRight: `1px solid ${brand.faint}`,
-            position: "sticky",
-            top: 61,
+            position: "relative",
+            top: 0,
             alignSelf: "flex-start",
           }}
         >
@@ -291,7 +293,7 @@ export function PortalFrame({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <main className="portal-frame-content flex-1 p-5 lg:p-8" style={{ background: brand.page, minWidth: 0 }}>
+        <main className="portal-frame-content h-full min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-5 lg:p-8" style={{ background: brand.page }}>
           <div className="content-scale-75-shell">
             <div className="content-scale-75">
               <section
