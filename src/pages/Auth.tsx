@@ -351,6 +351,7 @@ const Auth = () => {
                 <div className="relative"><IdCard className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input value={loginData.merchantId} onChange={(event) => setLoginData({ ...loginData, merchantId: event.target.value })} placeholder="Merchant ID or USV ID" required className="!h-14 !w-full !rounded-xl !border !border-black/10 !bg-[#f4f5f2] px-5 pl-12 !text-[14px] !text-[#1a1a1a] outline-none placeholder:!text-[13px] placeholder:!text-[#777] focus:!ring-2 focus:!ring-[#f0b429]" /></div>
                 <Button type="submit" disabled={isLoading} className="mt-1 !h-12 !w-full !rounded-xl !border !border-black/10 !bg-[#d6d6d0] p-3 !font-bold uppercase tracking-[0.15em] !text-[#1a1a1a] shadow-[0_4px_12px_rgba(0,0,0,0.18)] transition hover:!bg-[#f0b429] hover:!text-[#1e2320] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70">{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}LOGIN</Button>
                 <button type="button" onClick={() => setShowForgotPassword(true)} className="w-full rounded-xl border border-white/20 py-3 text-sm font-medium text-white/75 transition hover:border-white/40 hover:bg-white/10 hover:text-white">Forgot your password?</button>
+                <p className="pt-1 text-center text-sm text-white">Version 1.0.0</p>
               </form>
             )}
           </div>

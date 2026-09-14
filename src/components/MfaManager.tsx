@@ -118,8 +118,33 @@ export function MfaManager() {
     setBusy(false);
   };
 
+  const resetAuthenticator = async (factor: VerifiedMfaFactor) => {
+    if (factor.factor_type !== "totp") return;
+    setBusy(true);
+    let error: Error | null = null;
+    if (merchantSecurity?.current_aal === "aal2") {
+      const result = await supabase.auth.mfa.unenroll({ factorId: factor.id });
+      error = result.error;
+    } else {
+      const result = await supabase.functions.invoke("merchant-security", { body: { action: "mfa-reset", merchantId: merchantSecurity?.merchant_id, factorId: factor.id } });
+      error = result.error;
+    }
+    if (error) {
+      toast({ title: "Authenticator could not be reset", description: error.message, variant: "destructive" });
+    } else {
+      await Promise.all([load(), refreshMerchantSecurity()]);
+      toast({ title: "Authenticator reset", description: "The old authenticator was removed. Enroll a new one and scan its new QR code." });
+    }
+    setBusy(false);
+  };
+
   const remove = async (factor: VerifiedMfaFactor) => {
-    if (factors.length <= 1) {
+    const isAuthenticatorReset = factor.factor_type === "totp";
+    if (isAuthenticatorReset) {
+      await resetAuthenticator(factor);
+      return;
+    }
+    if (factors.length <= 1 && !isAuthenticatorReset) {
       toast({ title: "Keep one MFA method", description: "Merchant accounts must keep at least one verified method. Enroll a replacement first.", variant: "destructive" });
       return;
     }
@@ -132,7 +157,7 @@ export function MfaManager() {
     if (error) toast({ title: "MFA method was not removed", description: error.message, variant: "destructive" });
     else {
       await supabase.functions.invoke("merchant-security", { body: { action: "mfa-audit", merchantId: merchantSecurity?.merchant_id, event: "mfa.removed", factorType: factor.factor_type } });
-      await load();
+      await Promise.all([load(), refreshMerchantSecurity()]);
       toast({ title: "MFA method removed" });
     }
     setBusy(false);
@@ -141,7 +166,8 @@ export function MfaManager() {
   if (loading) return <div className="flex items-center p-8 text-white"><Loader2 className="mr-2 h-5 w-5 animate-spin" />Loading MFA status…</div>;
 
   if (factors.length > 0 && merchantSecurity?.current_aal !== "aal2") {
-    return <MfaChallenge title="Verify before managing MFA" description="Changing or replacing MFA requires verification with an existing enrolled method." onVerified={async () => { await refreshMerchantSecurity(); await load(); }} />;
+    const authenticator = factors.find((factor) => factor.factor_type === "totp");
+    return <div className="space-y-4"><MfaChallenge title="Verify before managing MFA" description="Changing or replacing MFA requires verification with an existing enrolled method." onVerified={async () => { await refreshMerchantSecurity(); await load(); }} />{authenticator && <div className="mx-auto w-full max-w-lg rounded-xl border border-red-400/25 bg-red-400/10 p-5 text-white"><p className="font-semibold">Authenticator setup is stuck?</p><p className="mt-1 text-sm text-white/65">If you never scanned the old QR code, reset that factor and create a fresh setup. You will need to sign in again after the reset.</p><Button type="button" variant="outline" disabled={busy} onClick={() => resetAuthenticator(authenticator)} className="mt-4 border-red-300/40 text-red-100">Reset authenticator setup</Button></div>}</div>;
   }
 
   return (
@@ -153,7 +179,7 @@ export function MfaManager() {
       {!!factors.length && <div className="space-y-3">{factors.map((factor) => (
         <div key={factor.id} className="flex items-center justify-between rounded-lg border border-white/10 bg-[#1b211d] p-4">
           <div className="flex items-center gap-3">{factor.factor_type === "phone" ? <Mail className="h-5 w-5 text-[#f6c431]" /> : <KeyRound className="h-5 w-5 text-[#f6c431]" />}<div><p className="font-medium">{factor.factor_type === "phone" ? "Phone verification" : "Authenticator app"}</p><p className="text-xs text-white/55">{factor.phone || factor.friendly_name || "Verified"}</p></div></div>
-          <Button type="button" variant="outline" disabled={busy || factors.length <= 1} onClick={() => remove(factor)} className="border-red-400/35 text-red-200"><Trash2 className="mr-2 h-4 w-4" />Remove</Button>
+          <Button type="button" variant="outline" disabled={busy || (factors.length <= 1 && factor.factor_type !== "totp")} onClick={() => remove(factor)} className="border-red-400/35 text-red-200"><Trash2 className="mr-2 h-4 w-4" />{factor.factor_type === "totp" ? "Reset authenticator" : "Remove"}</Button>
         </div>
       ))}</div>}
 

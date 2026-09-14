@@ -38,6 +38,10 @@ enable_confirmations = true
 subject = "Confirm your PaySME merchant account"
 content_path = "./supabase/templates/confirmation.html"
 
+[auth.email.template.magic_link]
+subject = "Your PaySME verification code"
+content_path = "./supabase/templates/magic_link.html"
+
 [storage.vector]
 enabled = false
 

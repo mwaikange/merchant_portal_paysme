@@ -307,6 +307,20 @@ async function recordMfaChange(actor: Actor, req: Request, body: Record<string, 
   return { ok: true };
 }
 
+async function resetMfaFactor(actor: Actor, req: Request, body: Record<string, unknown>) {
+  await ensureCurrentAccess(actor, req);
+  const factorId = cleanText(body.factorId, 100);
+  if (!factorId) throw new RequestError(400, "Authenticator factor is required");
+  const { data, error: listError } = await admin.auth.admin.mfa.listFactors({ userId: actor.userId });
+  if (listError) throw listError;
+  const factor = data?.factors.find((candidate) => candidate.id === factorId);
+  if (!factor || factor.factor_type !== "totp") throw new RequestError(404, "Authenticator factor was not found");
+  const { error } = await admin.auth.admin.mfa.deleteFactor({ userId: actor.userId, id: factorId });
+  if (error) throw error;
+  await audit(actor, req, "mfa.reset", "success", { factor_type: "totp" });
+  return { ok: true };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors(req) });
   let actor: Actor | null = null;
@@ -321,6 +335,7 @@ serve(async (req) => {
     if (action === "verify-and-approve") return json(req, await verifyAndApprove(actor, req, body));
     if (action === "mutate") return json(req, await mutate(actor, req, body));
     if (action === "mfa-audit") return json(req, await recordMfaChange(actor, req, body));
+    if (action === "mfa-reset") return json(req, await resetMfaFactor(actor, req, body));
     throw new RequestError(400, "Unknown action");
   } catch (error) {
     const status = error instanceof RequestError ? error.status : 500;
