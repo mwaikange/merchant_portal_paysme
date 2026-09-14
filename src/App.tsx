@@ -42,6 +42,7 @@ import { PortalDesktopGuard } from "./components/PortalDesktopGuard";
 import { TrackingConsentBanner } from "./components/TrackingConsent";
 import DesktopAccessRequired from "./pages/DesktopAccessRequired";
 import { merchantOrigin } from "./lib/portalDomains";
+import { usePortalDeviceAccess } from "./hooks/usePortalDeviceAccess";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const PortalBrand = ({ children }: { children: ReactNode }) => (
 
 const MerchantAuthRoute = () => {
   const location = useLocation();
+  const { desktopAllowed } = usePortalDeviceAccess();
   const isMerchantHost = window.location.hostname === new URL(merchantOrigin).hostname || ["localhost", "127.0.0.1"].includes(window.location.hostname);
   const isSignup = new URLSearchParams(location.search).get("tab")?.toLowerCase() === "signup";
 
@@ -65,7 +67,9 @@ const MerchantAuthRoute = () => {
     window.location.replace(isSignup ? `/sign-up?${query.toString()}` : `${merchantOrigin}/auth`);
   }, [isMerchantHost, isSignup, location.search]);
 
-  return isMerchantHost ? <PublicBrand><Auth /></PublicBrand> : null;
+  if (!isMerchantHost) return null;
+  if (!desktopAllowed) return <DesktopAccessRequired />;
+  return <PublicBrand><Auth /></PublicBrand>;
 };
 
 const App = () => (
