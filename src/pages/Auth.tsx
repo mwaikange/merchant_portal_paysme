@@ -314,10 +314,10 @@ const Auth = () => {
           {dedicatedMerchantImages.map((image, index) => {
             const positions = [
               "left-[-50px] top-[-30px] h-[280px] w-[280px]",
-              "left-[22%] top-[12%] h-[320px] w-[320px]",
+              "left-[22%] top-[10%] h-[345px] w-[345px]",
               "right-[25%] top-[12%] h-[270px] w-[270px]",
-              "left-[5%] bottom-[15%] h-[260px] w-[260px]",
-              "right-[27%] bottom-[8%] h-[280px] w-[280px]",
+              "left-[8%] bottom-[10%] h-[260px] w-[260px]",
+              "right-[27%] bottom-[6%] h-[305px] w-[305px]",
               "right-[2%] top-[37%] h-[250px] w-[250px]",
             ];
             return <img key={image} src={image} alt="" className={`absolute rounded-full border-[3px] border-white/[0.06] object-cover brightness-[0.88] saturate-[0.95] ${positions[index]}`} />;
@@ -329,7 +329,7 @@ const Auth = () => {
           </div>
         </section>
 
-        <section className="flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#2a2e2b] px-6 py-8 lg:h-screen lg:-translate-x-3 lg:px-8 lg:py-8">
+        <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#2a2e2b] px-6 py-8 lg:h-screen lg:-translate-x-3 lg:px-8 lg:py-8">
           <div className="w-full max-w-md">
             <div className="mb-6 text-center">
               <img src={paysmeLogoMain} alt="PaySME" className="mx-auto mb-3 h-[56px] w-auto" />
@@ -351,10 +351,10 @@ const Auth = () => {
                 <div className="relative"><IdCard className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-slate-500" /><Input value={loginData.merchantId} onChange={(event) => setLoginData({ ...loginData, merchantId: event.target.value })} placeholder="Merchant ID or USV ID" required className="!h-14 !w-full !rounded-xl !border !border-black/10 !bg-[#f4f5f2] px-5 pl-12 !text-[14px] !text-[#1a1a1a] outline-none placeholder:!text-[13px] placeholder:!text-[#777] focus:!ring-2 focus:!ring-[#f0b429]" /></div>
                 <Button type="submit" disabled={isLoading} className="mt-1 !h-12 !w-full !rounded-xl !border !border-black/10 !bg-[#d6d6d0] p-3 !font-bold uppercase tracking-[0.15em] !text-[#1a1a1a] shadow-[0_4px_12px_rgba(0,0,0,0.18)] transition hover:!bg-[#f0b429] hover:!text-[#1e2320] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70">{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}LOGIN</Button>
                 <button type="button" onClick={() => setShowForgotPassword(true)} className="w-full rounded-xl border border-white/20 py-3 text-sm font-medium text-white/75 transition hover:border-white/40 hover:bg-white/10 hover:text-white">Forgot your password?</button>
-                <p className="pt-1 text-center text-sm text-white">Version 1.0.0</p>
               </form>
             )}
           </div>
+          <p className="absolute bottom-5 left-0 right-0 text-center text-sm text-white">Version 1.0.0</p>
         </section>
       </div>
     );
