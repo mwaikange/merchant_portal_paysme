@@ -424,13 +424,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const trimmedMerchantId = merchantId.trim();
       await supabase.rpc('activate_my_staff_membership');
       const { data: contextRows } = await supabase.rpc('get_my_merchant_security_context', { p_merchant_identifier: trimmedMerchantId });
-      const resolved = Array.isArray(contextRows) ? contextRows[0] : contextRows;
+      let resolved = Array.isArray(contextRows) ? contextRows[0] : contextRows;
 
-      // The RPC already resolves the merchant from the authenticated user's
-      // identity and the supplied identifier. If it finds no match, there is
-      // no merchant to look up — never fall back to a placeholder merchant
-      // ID, which would query for a non-existent row and surface a confusing
-      // 406 instead of a clear error.
+      // The typed Merchant/USV ID may not exactly match what the account
+      // actually has (wrong format, stale value communicated to the
+      // merchant, etc). Before treating this as an invalid account, retry
+      // by resolving purely from the authenticated identity — the same
+      // owner/staff lookup the RPC does when no identifier is supplied.
+      // This prevents a formatting mismatch on the ID field from signing
+      // out an otherwise valid merchant.
+      if (!resolved?.merchant_id) {
+        const { data: fallbackRows } = await supabase.rpc('get_my_merchant_security_context', { p_merchant_identifier: null });
+        resolved = Array.isArray(fallbackRows) ? fallbackRows[0] : fallbackRows;
+      }
+
+      // Only after both the supplied identifier and the identity-only
+      // lookup fail is there truly no merchant to look up — never fall
+      // back to a placeholder merchant ID, which would query for a
+      // non-existent row and surface a confusing 406 instead of a clear
+      // error.
       if (!resolved?.merchant_id) {
         await supabase.auth.signOut();
         return {
