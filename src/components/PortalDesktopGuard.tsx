@@ -59,13 +59,16 @@ export function PortalDesktopGuard() {
     );
   }
 
-  // TEMPORARY: allow an authenticated user into the portal even when the
-  // merchant security context cannot be resolved (or is not "active"), so we
-  // can confirm that login itself works. Remove this bypass once the
-  // merchant-access resolution for new merchants is fixed.
   if (!merchantSecurity || merchantSecurity.membership_status !== "active") {
-    console.log("[v0] PortalDesktopGuard TEMP bypass: merchantSecurity=", merchantSecurity);
-    return <Outlet />;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#151815] px-6 text-white">
+        <div className="w-full max-w-lg rounded-2xl border border-red-400/35 bg-[#222922] p-8 text-center shadow-2xl">
+          <ShieldAlert className="mx-auto mb-5 h-12 w-12 text-red-300" />
+          <h1 className="text-2xl font-bold">Merchant access unavailable</h1>
+          <p className="mt-3 text-sm leading-6 text-white/70">This account has no active merchant access. Ask the merchant owner or PaySME support to review it.</p>
+        </div>
+      </div>
+    );
   }
 
   const staffDeniedPaths = new Set(["/portal/tax-settings", "/portal/kyc", "/portal/security-access", "/portal/api-integration"]);

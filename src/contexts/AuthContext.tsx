@@ -410,6 +410,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signIn = async (email: string, password: string, merchantId?: string) => {
     window.sessionStorage.removeItem(SELECTED_MERCHANT_KEY);
+
+    // All three credentials are required at all times: email, password, and
+    // the Merchant/USV ID. Reject before creating a session if the identifier
+    // is missing so we never leave a dangling authenticated session.
+    const trimmedMerchantId = merchantId?.trim();
+    if (!trimmedMerchantId) {
+      return { error: new Error('Merchant ID or USV ID is required') };
+    }
+
     const { data: signInData, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -419,33 +428,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return { error };
     }
 
-    // TEMPORARY: Do not require or enforce the Merchant/USV ID to log in.
-    // We still attempt to resolve the merchant (so the dashboard loads when
-    // possible), but we NEVER sign the user out and NEVER block login when
-    // the identifier does not resolve. This restores the old email+password
-    // login behavior so we can confirm authentication itself works, and lets
-    // fetchMerchant/PortalDesktopGuard drive access afterwards.
     await supabase.rpc('activate_my_staff_membership');
 
-    const trimmedMerchantId = merchantId?.trim();
-    let resolved: any = null;
+    // Resolve strictly against the typed Merchant/USV ID. If it does not
+    // resolve to a merchant this account can access, sign back out and return
+    // a clear error instead of leaving the user in a half-authenticated state.
+    const { data: contextRows } = await supabase.rpc('get_my_merchant_security_context', { p_merchant_identifier: trimmedMerchantId });
+    const resolved = Array.isArray(contextRows) ? contextRows[0] : contextRows;
 
-    if (trimmedMerchantId) {
-      const { data: contextRows } = await supabase.rpc('get_my_merchant_security_context', { p_merchant_identifier: trimmedMerchantId });
-      resolved = Array.isArray(contextRows) ? contextRows[0] : contextRows;
-    }
-
-    // Always fall back to resolving purely from the authenticated identity
-    // (owner/staff lookup) when the typed identifier is missing or does not
-    // match. Never fall back to a placeholder id.
     if (!resolved?.merchant_id) {
-      const { data: fallbackRows } = await supabase.rpc('get_my_merchant_security_context', { p_merchant_identifier: null });
-      resolved = Array.isArray(fallbackRows) ? fallbackRows[0] : fallbackRows;
+      await supabase.auth.signOut({ scope: 'local' });
+      return { error: new Error('We could not verify that Merchant ID or USV ID for this account. Please check it and try again.') };
     }
 
-    if (resolved?.merchant_id) {
-      window.sessionStorage.setItem(SELECTED_MERCHANT_KEY, resolved.merchant_id);
-    }
+    window.sessionStorage.setItem(SELECTED_MERCHANT_KEY, resolved.merchant_id);
 
     if (signInData.user) await fetchMerchant(signInData.user.id);
 
