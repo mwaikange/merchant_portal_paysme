@@ -110,9 +110,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // derives merchant and role; the browser never supplies either value.
       await supabase.rpc('activate_my_staff_membership');
       const selectedMerchant = window.sessionStorage.getItem(SELECTED_MERCHANT_KEY);
-      const { data: contextRows, error: contextError } = await supabase
+      let { data: contextRows, error: contextError } = await supabase
         .rpc('get_my_merchant_security_context', { p_merchant_identifier: selectedMerchant || null });
-      const context = (Array.isArray(contextRows) ? contextRows[0] : contextRows) as MerchantSecurityContext | null;
+      let context = (Array.isArray(contextRows) ? contextRows[0] : contextRows) as MerchantSecurityContext | null;
+
+      // A cached merchant identifier (e.g. from sessionStorage) can go stale if the
+      // merchant was deleted/recreated, or the identifier no longer matches this
+      // account. Self-heal by re-resolving from the authenticated identity alone
+      // instead of permanently locking the user out.
+      if (!contextError && !context && selectedMerchant) {
+        window.sessionStorage.removeItem(SELECTED_MERCHANT_KEY);
+        const retry = await supabase
+          .rpc('get_my_merchant_security_context', { p_merchant_identifier: null });
+        contextRows = retry.data;
+        contextError = retry.error;
+        context = (Array.isArray(contextRows) ? contextRows[0] : contextRows) as MerchantSecurityContext | null;
+        if (context) {
+          window.sessionStorage.setItem(SELECTED_MERCHANT_KEY, context.merchant_id);
+        }
+      }
 
       if (contextError || !context) {
         if (contextError) console.error('Error fetching merchant security context:', contextError);
