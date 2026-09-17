@@ -403,10 +403,10 @@ const Auth = () => {
               <Tabs
                 value={activeTab}
                 onValueChange={(value) => {
-                  if (activeTab === "signup" && value === "login") {
-                    window.location.assign(new URL("/auth", merchantOrigin).href);
-                    return;
-                  }
+                  // TEMP: previously clicking "Sign In" on the public signup page
+                  // redirected to the merchant portal (merchant.paysme.site/auth).
+                  // Redirect removed so users can log in inline from here while we
+                  // diagnose the merchant-access issue.
                   setActiveTab(value);
                 }}
                 className="space-y-4"
