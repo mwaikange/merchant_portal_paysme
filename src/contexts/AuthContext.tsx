@@ -405,26 +405,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     // If merchant ID is provided, validate it matches the merchant record
     if (merchantId) {
+      const trimmedMerchantId = merchantId.trim();
       await supabase.rpc('activate_my_staff_membership');
-      const { data: contextRows } = await supabase.rpc('get_my_merchant_security_context', { p_merchant_identifier: merchantId });
+      const { data: contextRows } = await supabase.rpc('get_my_merchant_security_context', { p_merchant_identifier: trimmedMerchantId });
       const resolved = Array.isArray(contextRows) ? contextRows[0] : contextRows;
-      const { data: merchantData, error: merchantError } = await supabase
-        .from('merchants')
-        .select('vendor_id, merchant_id')
-        .eq('merchant_id', resolved?.merchant_id || '00000000-0000-0000-0000-000000000000')
-        .single();
 
-      if (merchantError || !merchantData || 
-          (merchantData.vendor_id !== merchantId && merchantData.merchant_id !== merchantId)) {
-        // Sign out the user since merchant ID doesn't match
+      // The RPC already resolves the merchant from the authenticated user's
+      // identity and the supplied identifier. If it finds no match, there is
+      // no merchant to look up — never fall back to a placeholder merchant
+      // ID, which would query for a non-existent row and surface a confusing
+      // 406 instead of a clear error.
+      if (!resolved?.merchant_id) {
         await supabase.auth.signOut();
-        return { 
-          error: { 
-            message: "Invalid Merchant ID or USV ID for this email address" 
-          } as any 
+        return {
+          error: {
+            message: "Invalid Merchant ID or USV ID for this email address"
+          } as any
         };
       }
-      window.sessionStorage.setItem(SELECTED_MERCHANT_KEY, merchantData.merchant_id);
+
+      window.sessionStorage.setItem(SELECTED_MERCHANT_KEY, resolved.merchant_id);
       if (signInData.user) await fetchMerchant(signInData.user.id);
     }
 
