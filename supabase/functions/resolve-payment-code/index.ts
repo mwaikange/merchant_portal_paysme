@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
 
     const { data: transaction, error: transactionError } = await supabase
       .from("transactions")
-      .select("transaction_id, merchant_id, generated_code, amount, user_email, user_mobile, payer_town, status, type, invoice_id, business_name, created_at, vendor_redeemable, payment_purpose, tax_mode, vat_rate, net_amount, vat_amount, gross_amount")
+      .select("transaction_id, merchant_id, generated_code, amount, user_email, user_mobile, payer_town, status, type, invoice_id, business_name, created_at, vendor_obligation_id, vendor_redeemable, payment_purpose, allowed_payment_methods, tax_mode, vat_rate, net_amount, vat_amount, gross_amount")
       .in("generated_code", codeCandidates)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -80,13 +80,7 @@ Deno.serve(async (req) => {
     if (transactionError) throw transactionError;
 
     if (transaction) {
-      if (transaction.vendor_redeemable === false ||
-          ["vendor_token_topup", "vendor_advance_installment"].includes(transaction.payment_purpose || transaction.type)) {
-        return jsonResponse({
-          ok: false,
-          error: "This payment is restricted to approved external payment methods",
-        }, 403);
-      }
+
       return jsonResponse({
         ok: true,
         source: "transactions",
@@ -100,6 +94,10 @@ Deno.serve(async (req) => {
           status: transaction.status,
           invoice_id: transaction.invoice_id || transaction.generated_code,
           business_name: transaction.business_name || "PaySME",
+          vendor_obligation_id: transaction.vendor_obligation_id || null,
+          vendor_redeemable: transaction.vendor_redeemable,
+          payment_purpose: transaction.payment_purpose || transaction.type || null,
+          allowed_payment_methods: transaction.allowed_payment_methods || [],
           recurring: false,
           recurring_period: "monthly",
           tax_mode: transaction.tax_mode || "not_registered",
