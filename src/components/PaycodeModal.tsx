@@ -75,6 +75,9 @@ interface PaycodeModalProps {
     netAmount?: number | string;
     vatAmount?: number | string;
     grossAmount?: number | string;
+    vendorRedeemable?: boolean | null;
+    paymentPurpose?: string | null;
+    allowedPaymentMethods?: string[];
   } | null;
 }
 
@@ -216,6 +219,8 @@ export function PaycodeModal({
   const showsVat = taxMode !== "not_registered";
   const vatRate = Number(paymentData?.vatRate || 0);
   const grossAmount = Number(paymentData?.grossAmount ?? paymentData?.amount ?? 0);
+  const isVendorAppPayment = paymentData?.vendorRedeemable === false ||
+    ["vendor_token_topup", "vendor_advance_installment"].includes(paymentData?.paymentPurpose || "");
   const vatAmount = Number(paymentData?.vatAmount || 0);
   const netAmount = Number(paymentData?.netAmount ?? (showsVat ? grossAmount - vatAmount : grossAmount));
   const wayameSimulationTime = `${Math.floor(wayameSimulationSeconds / 60)}:${String(wayameSimulationSeconds % 60).padStart(2, "0")}`;
@@ -451,7 +456,7 @@ export function PaycodeModal({
             <X className="h-4 w-4" />
           </button>
           <h3 className="mb-1 text-xl font-bold text-white">
-            {paymentData?.businessName || "PaySME"}
+            {isVendorAppPayment ? "PaySME Vendor App" : (paymentData?.businessName || "PaySME")}
           </h3>
           <p className="text-sm text-gray-300">Complete your payment securely with PaySME</p>
         </div>
@@ -501,15 +506,23 @@ export function PaycodeModal({
 
             <div className="mb-3 space-y-1">
               <p className="text-xs text-gray-300">This code has been sent via SMS.</p>
-              <p className="text-xs text-gray-300">
-                Provide it at the teller/kiosk of our participating Payment Vendors to finalize purchase.
-              </p>
-              <p className="text-xs text-gray-300">
-                The Merchant will immediately get notified of successful payment in order to ship product or initialize service.
-              </p>
-              <p className="text-xs text-gray-300">
-                See list of Payment Vendors Here: <span className="cursor-pointer text-yellow-400 underline">Vendor List</span>
-              </p>
+              {isVendorAppPayment ? (
+                <p className="text-xs text-gray-300">
+                  This is a payment reference only. It cannot be processed through the PaySME Vendor App; choose an available payment method below.
+                </p>
+              ) : (
+                <>
+                  <p className="text-xs text-gray-300">
+                    Provide it at the teller/kiosk of our participating Payment Vendors to finalize purchase.
+                  </p>
+                  <p className="text-xs text-gray-300">
+                    The Merchant will immediately get notified of successful payment in order to ship product or initialize service.
+                  </p>
+                  <p className="text-xs text-gray-300">
+                    See list of Payment Vendors Here: <span className="cursor-pointer text-yellow-400 underline">Vendor List</span>
+                  </p>
+                </>
+              )}
             </div>
 
             {!billingLocked && (

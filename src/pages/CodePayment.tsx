@@ -23,6 +23,9 @@ type ResolvedPayment = {
   gross_amount?: number;
   recurring?: boolean | null;
   recurring_period?: string | null;
+  vendor_redeemable?: boolean | null;
+  payment_purpose?: string | null;
+  allowed_payment_methods?: string[] | null;
 };
 
 type PaymentPageError = {
@@ -223,6 +226,9 @@ const CodePayment = () => {
             netAmount: payment.net_amount,
             vatAmount: payment.vat_amount,
             grossAmount: payment.gross_amount || payment.amount,
+            vendorRedeemable: payment.vendor_redeemable,
+            paymentPurpose: payment.payment_purpose,
+            allowedPaymentMethods: payment.allowed_payment_methods || [],
           }}
         />
       )}
