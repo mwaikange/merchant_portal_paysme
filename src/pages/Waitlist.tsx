@@ -108,17 +108,18 @@ const Waitlist = () => {
 
       <header className="relative z-10 border-b border-white/10 bg-white/[0.03] backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-8">
-          <button type="button" onClick={() => navigate("/")} aria-label="PaySME home">
+          <a href="https://www.paysme.site/" aria-label="PaySME home">
             <img src={paysmeLogo} alt="PaySME" className="h-10 w-auto md:h-12" />
-          </button>
+          </a>
           <Button
-            type="button"
+            asChild
             variant="ghost"
-            onClick={() => navigate("/")}
             className="text-white hover:bg-white/10 hover:text-[#f6c431]"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to PaySME
+            <a href="https://www.paysme.site/">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </a>
           </Button>
         </div>
       </header>
@@ -128,7 +129,7 @@ const Waitlist = () => {
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#f6c431]/40 bg-[#f6c431]/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#f6c431]">
               <Sparkles className="h-4 w-4" />
-              Launching soon
+              Merchant onboarding
             </div>
             <h1 className="max-w-2xl text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl lg:text-6xl">
               Your business deserves
@@ -144,7 +145,7 @@ const Waitlist = () => {
           <div className="grid gap-3 sm:grid-cols-3">
             {[
               { icon: Rocket, title: "Personal introduction", text: "Start with a conversation about your business." },
-              { icon: BellRing, title: "Launch updates", text: "Know as soon as PaySME is ready." },
+              { icon: BellRing, title: "Clear next steps", text: "Our team will follow up about onboarding." },
               { icon: ShieldCheck, title: "No commitment", text: "Registering your interest is completely free." },
             ].map(({ icon: Icon, title, text }) => (
               <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.055] p-4 backdrop-blur">
