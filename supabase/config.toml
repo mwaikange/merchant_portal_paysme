@@ -8,8 +8,6 @@ additional_redirect_urls = [
   "https://merchant.paysme.site/**",
   "https://merchant.paysme.site/auth",
   "https://merchant.paysme.site/reset-password",
-  "https://paysme.site/auth",
-  "https://www.paysme.site/auth",
   "http://localhost:8080/auth",
   "http://localhost:8081/auth",
   "http://localhost:8082/auth",
@@ -31,7 +29,7 @@ verify_enabled = false
 otp_length = 6
 
 [auth.email]
-enable_signup = true
+enable_signup = false
 enable_confirmations = true
 
 [auth.email.template.confirmation]
@@ -92,6 +90,9 @@ verify_jwt = false
 
 [functions.merchant-waitlist]
 verify_jwt = false
+
+[functions.merchant-renewal-admin-alert]
+verify_jwt = true
 
 [functions.user-journeys-access]
 verify_jwt = false

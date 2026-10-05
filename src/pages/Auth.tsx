@@ -25,7 +25,7 @@ const merchantImages = [
   "/pay-home/merchants/merchant-grill-ai.png",
 ];
 const dedicatedMerchantImages = [...merchantImages, "/pay-home/merchants/merchant-hairdresser.png"];
-const accountCreationEnabled = true;
+const accountCreationEnabled = false;
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 
@@ -50,9 +50,7 @@ const Auth = () => {
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [invitationPassword, setInvitationPassword] = useState("");
   const [invitationConfirm, setInvitationConfirm] = useState("");
-  const [activeTab, setActiveTab] = useState(() =>
-    new URLSearchParams(window.location.search).get("tab")?.toLowerCase() === "signup" || ["/sign-up", "/register"].includes(window.location.pathname) ? "signup" : "login"
-  );
+  const [activeTab, setActiveTab] = useState("login");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [signupMobileTouched, setSignupMobileTouched] = useState(false);
   const [loginData, setLoginData] = useState({ email: "", password: "", merchantId: "" });
@@ -411,19 +409,19 @@ const Auth = () => {
                 }}
                 className="space-y-4"
               >
-                <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-sm border border-white/20 h-11">
+                <TabsList className="grid w-full grid-cols-1 bg-white/10 backdrop-blur-sm border border-white/20 h-11">
                   <TabsTrigger 
                     value="login" 
                     className="data-[state=active]:bg-paysme-orange data-[state=active]:text-white font-medium"
                   >
                     Sign In
                   </TabsTrigger>
-                  <TabsTrigger 
+                  {accountCreationEnabled && <TabsTrigger
                     value="signup"
                     className="data-[state=active]:bg-paysme-orange data-[state=active]:text-white font-medium"
                   >
                     Create Account
-                  </TabsTrigger>
+                  </TabsTrigger>}
                 </TabsList>
 
                 {/* Login Tab */}
@@ -564,7 +562,7 @@ const Auth = () => {
                 </TabsContent>
 
                 {/* Signup Tab */}
-                <TabsContent value="signup" className="space-y-4">
+                {accountCreationEnabled && <TabsContent value="signup" className="space-y-4">
                   <form onSubmit={handleSignup} className="space-y-4">
                     {/* Name Fields */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -770,7 +768,7 @@ const Auth = () => {
                       {accountCreationEnabled ? (isLoading ? "Creating Account..." : "Create Account") : "Account Creation Paused"} <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>
                   </form>
-                </TabsContent>
+                </TabsContent>}
               </Tabs>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -47,6 +47,9 @@ const initialForm = {
 
 const Waitlist = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const selectedPlan = searchParams.get('plan') || '';
+  const selectedTerm = searchParams.get('term') || '';
   const [form, setForm] = useState(initialForm);
   const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -61,7 +64,7 @@ const Waitlist = () => {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!consent) {
-      setErrorMessage("Please confirm that PaySME may contact you about the launch.");
+      setErrorMessage("Please confirm that PaySME may contact you about merchant onboarding.");
       return;
     }
 
@@ -69,10 +72,10 @@ const Waitlist = () => {
     setErrorMessage("");
     try {
       const { data, error } = await supabase.functions.invoke<WaitlistResponse>("merchant-waitlist", {
-        body: form,
+        body: { ...form, preferred_package: selectedPlan, preferred_duration_months: Number.parseInt(selectedTerm, 10) || null },
       });
       if (error || !data?.ok) {
-        let message = data?.error || error?.message || "Could not join the waitlist. Please try again.";
+        let message = data?.error || error?.message || "Could not register your interest. Please try again.";
         const context = error && "context" in error ? error.context : null;
         if (context instanceof Response) {
           try {
@@ -86,7 +89,7 @@ const Waitlist = () => {
       }
       setResult(data);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Could not join the waitlist. Please try again.");
+      setErrorMessage(error instanceof Error ? error.message : "Could not register your interest. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -111,11 +114,11 @@ const Waitlist = () => {
           <Button
             type="button"
             variant="ghost"
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/")}
             className="text-white hover:bg-white/10 hover:text-[#f6c431]"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Merchant sign in
+            Back to PaySME
           </Button>
         </div>
       </header>
@@ -132,16 +135,17 @@ const Waitlist = () => {
               <span className="block text-[#f6c431]">simpler payments.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
-              Join forward-thinking Namibian merchants preparing to accept smarter digital payments with PaySME.
-              Tell us about your business and we’ll notify you when we launch.
+              Register your interest and begin a conversation with the PaySME merchant team.
+              Tell us about your business and our team will contact you about the next steps.
             </p>
+            {selectedPlan && selectedTerm ? <p className="mt-4 inline-block rounded-lg border border-[#f6c431]/50 bg-[#f6c431]/10 px-4 py-2 text-sm font-semibold text-[#f6c431]">Your pricing preference: {selectedPlan} · {selectedTerm}. Final terms are confirmed during onboarding.</p> : null}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
             {[
-              { icon: Rocket, title: "Early access", text: "Be among the first merchants invited." },
+              { icon: Rocket, title: "Personal introduction", text: "Start with a conversation about your business." },
               { icon: BellRing, title: "Launch updates", text: "Know as soon as PaySME is ready." },
-              { icon: ShieldCheck, title: "No commitment", text: "Joining the waitlist is completely free." },
+              { icon: ShieldCheck, title: "No commitment", text: "Registering your interest is completely free." },
             ].map(({ icon: Icon, title, text }) => (
               <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.055] p-4 backdrop-blur">
                 <Icon className="mb-3 h-5 w-5 text-[#f6c431]" />
@@ -181,19 +185,19 @@ const Waitlist = () => {
                     </div>
                   </div>
                   <p className="mt-8 text-xs font-black uppercase tracking-[0.2em] text-emerald-700">
-                    {result.already_joined ? "You’re already on the list" : "Your place is saved"}
+                    {result.already_joined ? "Your interest is already registered" : "Your interest is registered"}
                   </p>
                   <h2 className="mt-3 text-3xl font-black sm:text-4xl">
-                    We’ll see you at launch.
+                    We’ll be in touch.
                   </h2>
                   <p className="mt-4 max-w-md leading-relaxed text-gray-600">
-                    Thanks for your interest in PaySME. We’ll notify you using the contact details supplied when merchant access opens.
+                    Thanks for your interest in PaySME. Our merchant team can use the details supplied to arrange an introduction and discuss onboarding.
                   </p>
                   {Number(result.waitlist_count) > 0 && (
                     <div className="mt-8 rounded-2xl border border-[#f6c431]/50 bg-[#fff8dc] px-8 py-5">
                       <p className="text-xs font-bold uppercase tracking-wider text-[#806500]">Merchant interest</p>
                       <p className="mt-1 text-3xl font-black">{result.waitlist_count}</p>
-                      <p className="text-sm text-gray-600">business{result.waitlist_count === 1 ? "" : "es"} waiting for launch</p>
+                      <p className="text-sm text-gray-600">business{result.waitlist_count === 1 ? "" : "es"} registered</p>
                     </div>
                   )}
                   <Button type="button" onClick={() => navigate("/")} className="mt-8 bg-[#172018] text-white hover:bg-[#263229]">
@@ -204,10 +208,10 @@ const Waitlist = () => {
               ) : (
                 <>
                   <div className="mb-7">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a17b00]">Reserve your place</p>
-                    <h2 className="mt-2 text-3xl font-black">Join the merchant waitlist</h2>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a17b00]">Register Merchant Interest</p>
+                    <h2 className="mt-2 text-3xl font-black">Register your merchant interest</h2>
                     <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                      It takes less than a minute. We’ll notify you when PaySME launches.
+                      It takes less than a minute. Our team will follow up about your business and the next steps.
                     </p>
                   </div>
 
@@ -330,7 +334,7 @@ const Waitlist = () => {
                         className="mt-0.5 h-4 w-4 accent-[#d8a900]"
                       />
                       <span>
-                        I agree that PaySME may contact me about merchant access and launch updates.
+                        I agree that PaySME may contact me about merchant onboarding and relevant service updates.
                       </span>
                     </label>
 
@@ -348,11 +352,11 @@ const Waitlist = () => {
                       {submitting ? (
                         <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Saving your place…</>
                       ) : (
-                        <>Join the waitlist <ArrowRight className="ml-2 h-5 w-5" /></>
+                        <>Register your interest <ArrowRight className="ml-2 h-5 w-5" /></>
                       )}
                     </Button>
                     <p className="text-center text-xs text-gray-400">
-                      Your information is used only for PaySME launch communication.
+                      Your information is used to follow up on your Merchant Interest request.
                     </p>
                   </form>
                 </>

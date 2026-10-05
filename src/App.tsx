@@ -2,8 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
@@ -55,19 +54,10 @@ const PortalBrand = ({ children }: { children: ReactNode }) => (
 );
 
 const MerchantAuthRoute = () => {
-  const location = useLocation();
   const { desktopAllowed } = usePortalDeviceAccess();
   const isMerchantHost = window.location.hostname === new URL(merchantOrigin).hostname || ["localhost", "127.0.0.1"].includes(window.location.hostname);
-  const isSignup = new URLSearchParams(location.search).get("tab")?.toLowerCase() === "signup";
 
-  useEffect(() => {
-    if (isMerchantHost) return;
-    const query = new URLSearchParams(location.search);
-    query.set("tab", "signup");
-    window.location.replace(isSignup ? `/sign-up?${query.toString()}` : `${merchantOrigin}/auth`);
-  }, [isMerchantHost, isSignup, location.search]);
-
-  if (!isMerchantHost) return null;
+  if (!isMerchantHost) return <PublicBrand><NotFound /></PublicBrand>;
   if (!desktopAllowed) return <DesktopAccessRequired />;
   return <PublicBrand><Auth /></PublicBrand>;
 };
@@ -85,9 +75,9 @@ const App = () => (
             <Route path="/desktop-required" element={<DesktopAccessRequired />} />
             <Route path="/auth" element={<MerchantAuthRoute />} />
             <Route path="/login" element={<MerchantAuthRoute />} />
-            <Route path="/signup" element={<Navigate to="/sign-up?tab=signup" replace />} />
-            <Route path="/sign-up" element={<PublicBrand><Auth /></PublicBrand>} />
-            <Route path="/register" element={<Navigate to="/sign-up?tab=signup" replace />} />
+            <Route path="/signup" element={<Navigate to="/waitlist" replace />} />
+            <Route path="/sign-up" element={<Navigate to="/waitlist" replace />} />
+            <Route path="/register" element={<Navigate to="/waitlist" replace />} />
             <Route path="/waitlist" element={<Waitlist />} />
             <Route path="/user_journeys" element={<UserJourneys />} />
             <Route path="/psp-sponsor" element={<PublicBrand><PspSponsor /></PublicBrand>} />

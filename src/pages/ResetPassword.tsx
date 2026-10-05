@@ -96,6 +96,9 @@ const ResetPassword = () => {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
 
+      const { error: completionError } = await (supabase as any).rpc("complete_merchant_password_change");
+      if (completionError) throw completionError;
+
       setIsSuccess(true);
       toast({ title: "Password updated!", description: "Your password has been reset successfully." });
 

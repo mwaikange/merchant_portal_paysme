@@ -88,7 +88,7 @@ const FAQ = () => {
     {
       question: "What are the transaction fees?",
       answer: [
-        "PaySME plans start from N$200 per month and each plan can be paid in 3, 6, 9, or 12 month terms. Starter is N$200 pm, Growth is N$500 pm, Scale is N$1,000 pm, and Corporate is N$3,000 pm.",
+        "PaySME plans start from N$200 per month, with 6 and 12 month commercial options. Starter is N$200 pm, Growth is N$500 pm, Scale is N$1,000 pm, and Corporate is N$3,000 pm. Final terms are confirmed during onboarding.",
         "PaySME does not charge a PaySME percentage fee on card payments. Card payment access and monthly limits depend on the selected plan: Starter has no card payments, Growth supports card payments up to N$10,000 pm, Scale up to N$50,000 pm, and Corporate has unlimited card payment value per month.",
         "For PaySME codes and other non-card payment types such as registered facilitators, PaySME transaction fees range from 2% down to 1% depending on the selected plan."
       ]
@@ -185,8 +185,8 @@ const FAQ = () => {
             <Button onClick={() => navigate('/contact')} variant="outline" className="text-white border-white hover:bg-white hover:text-marketing-bg-deep">
               Contact Support
             </Button>
-            <Button onClick={() => navigate('/login?tab=signup')} className="bg-marketing-yellow hover:bg-marketing-yellow-deep text-marketing-bg-deep">
-              Get Started
+            <Button onClick={() => navigate('/waitlist')} className="bg-marketing-yellow hover:bg-marketing-yellow-deep text-marketing-bg-deep">
+              Register Your Interest
             </Button>
           </div>
         </div>

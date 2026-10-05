@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, HelpCircle, LogIn, Mail, Music, Phone, Tags, Linkedin, Facebook, Instagram, UserPlus } from "lucide-react";
+import { ArrowRight, HelpCircle, Mail, Music, Phone, Tags, Linkedin, Facebook, Instagram, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -263,9 +263,8 @@ const Contact = () => {
                 <div className="grid gap-3">
                   {[
                     { label: "Frequently Asked Questions", description: "Answers about PaySME codes, fees, and setup.", href: "/faq", icon: HelpCircle },
-                    { label: "View Pricing Plans", description: "Compare the 3, 6, 9, and 12 month terms.", href: "/pricing", icon: Tags },
-                    { label: "Create Account", description: "Start merchant registration.", href: "/login?tab=signup", icon: UserPlus },
-                    { label: "Merchant Login", description: "Access the merchant portal.", href: "/auth", icon: LogIn },
+                    { label: "View Pricing Plans", description: "Compare the 6 and 12 month options.", href: "/pricing", icon: Tags },
+                    { label: "Register Your Interest", description: "Join the merchant onboarding waitlist.", href: "/waitlist", icon: UserPlus },
                   ].map((link) => {
                     const Icon = link.icon;
 

@@ -32,5 +32,9 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return null;
   }
 
+  if (user.app_metadata?.must_change_password) {
+    return null;
+  }
+
   return <>{children}</>;
 };

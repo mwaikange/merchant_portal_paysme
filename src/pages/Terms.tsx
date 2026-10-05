@@ -170,8 +170,8 @@ const Terms = () => {
             <Button variant="outline" onClick={() => navigate('/contact')} className="text-white border-white hover:bg-white hover:text-marketing-bg-deep">
               Contact Support
             </Button>
-            <Button onClick={() => navigate('/login?tab=signup')} className="bg-marketing-yellow hover:bg-marketing-yellow-deep text-marketing-bg-deep">
-              Get Started
+            <Button onClick={() => navigate('/waitlist')} className="bg-marketing-yellow hover:bg-marketing-yellow-deep text-marketing-bg-deep">
+              Register Your Interest
             </Button>
           </div>
         </div>

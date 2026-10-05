@@ -629,6 +629,14 @@ Deno.serve(async (req)=>{
 
     // 🚀 2. CREATE SUBSCRIPTION (requires authentication)
     if (action === "create_subscription") {
+      return new Response(JSON.stringify({
+        error: "Merchant package activation is managed by PaySME Admin after the Merchant Services Agreement is signed."
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+
+      /* Legacy self-service implementation retained temporarily for payment-history compatibility.
       const user = await authenticateUser(req);
       const { user_id, duration_months, plan_type, recurring } = payload;
       
@@ -797,7 +805,7 @@ Deno.serve(async (req)=>{
           ...corsHeaders,
           "Content-Type": "application/json"
         }
-      });
+      }); */
     }
 
     // 🚀 3. SMS TOP-UP (requires authentication)

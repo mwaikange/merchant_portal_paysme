@@ -20,8 +20,8 @@ interface PricingPlan {
 const Pricing = () => {
   const navigate = useNavigate();
 
-  const selectPlan = (planName: string, term: string) => {
-    navigate(`/login?tab=signup&plan=${encodeURIComponent(`${planName} - ${term}`)}`);
+  const registerInterest = (planName: string, term: string) => {
+    navigate(`/waitlist?plan=${encodeURIComponent(planName)}&term=${encodeURIComponent(term)}`);
   };
 
   const plans: PricingPlan[] = [
@@ -32,9 +32,7 @@ const Pricing = () => {
       accent: "red",
       summary: "Best for new merchants testing PaySME without card processing.",
       terms: [
-        { label: "3 Months", total: "N$600" },
         { label: "6 Months", total: "N$1,200" },
-        { label: "9 Months", total: "N$1,800" },
         { label: "12 Months", total: "N$2,400" },
       ],
       paymentRules: [
@@ -65,9 +63,7 @@ const Pricing = () => {
       badge: "Most Popular",
       summary: "A stronger fit for growing businesses that need card access and more support.",
       terms: [
-        { label: "3 Months", total: "N$1,500" },
         { label: "6 Months", total: "N$3,000" },
-        { label: "9 Months", total: "N$4,500" },
         { label: "12 Months", total: "N$6,000" },
       ],
       paymentRules: [
@@ -94,9 +90,7 @@ const Pricing = () => {
       accent: "gold",
       summary: "Built for merchants sending regular payment requests and larger card payments.",
       terms: [
-        { label: "3 Months", total: "N$3,000" },
         { label: "6 Months", total: "N$6,000" },
-        { label: "9 Months", total: "N$9,000" },
         { label: "12 Months", total: "N$12,000" },
       ],
       paymentRules: [
@@ -125,9 +119,7 @@ const Pricing = () => {
       badge: "Best Value",
       summary: "The lowest PaySME transaction rate for established merchants and partners.",
       terms: [
-        { label: "3 Months", total: "N$9,000" },
         { label: "6 Months", total: "N$18,000" },
-        { label: "9 Months", total: "N$27,000" },
         { label: "12 Months", total: "N$36,000" },
       ],
       paymentRules: [
@@ -202,9 +194,9 @@ const Pricing = () => {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-marketing-yellow/50 bg-black/30">
             <WalletCards className="h-6 w-6 text-marketing-yellow" />
           </div>
-          <h1 className="mb-4 text-4xl font-handwritten text-white md:text-5xl">Choose Your PaySME Plan</h1>
+          <h1 className="mb-4 text-4xl font-handwritten text-white md:text-5xl">Find Your PaySME Plan</h1>
           <p className="mx-auto max-w-3xl text-base text-white/75 md:text-lg">
-            Choose a plan tier first, then pick a 3, 6, 9, or 12 month payment term. Card payments have no PaySME percentage fee; PaySME transaction rates apply to PaySME and facilitator payment types.
+            Compare our 6 and 12 month commercial options, then register your interest. PaySME will guide you through onboarding and activate your agreed package after the Merchant Services Agreement is signed.
           </p>
           <p className="mt-3 text-xs font-semibold text-marketing-yellow">**Prices exclude VAT</p>
         </div>
@@ -252,7 +244,7 @@ const Pricing = () => {
                       {plan.terms.map((term) => (
                         <Button
                           key={term.label}
-                          onClick={() => selectPlan(plan.name, term.label)}
+                          onClick={() => registerInterest(plan.name, term.label)}
                           className="h-auto flex-col gap-1 bg-marketing-yellow px-3 py-3 text-marketing-bg-deep hover:bg-marketing-yellow-deep"
                         >
                           <span className="text-xs font-bold">{term.label}</span>
@@ -261,6 +253,7 @@ const Pricing = () => {
                       ))}
                     </div>
                     <p className="mt-3 text-[11px] font-semibold text-white/60">**Prices exclude VAT</p>
+                    <p className="mt-2 text-[11px] leading-relaxed text-white/55">Package and contract terms are confirmed during PaySME onboarding.</p>
                   </div>
                 </div>
 
@@ -328,6 +321,7 @@ const Pricing = () => {
         </section>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4 text-center">
+          <Button onClick={() => navigate("/waitlist")} className="bg-marketing-yellow text-marketing-bg-deep hover:bg-marketing-yellow-deep">Become a PaySME Merchant</Button>
           <Button
             variant="outline"
             onClick={() => navigate("/faq")}
@@ -335,12 +329,7 @@ const Pricing = () => {
           >
             View FAQ
           </Button>
-          <Button
-            onClick={() => navigate("/contact")}
-            className="bg-marketing-yellow text-marketing-bg-deep hover:bg-marketing-yellow-deep"
-          >
-            Contact Sales
-          </Button>
+          <Button variant="outline" onClick={() => navigate("/contact")} className="border-white/30 text-white hover:bg-white hover:text-marketing-bg-deep">Contact Sales</Button>
         </div>
       </div>
     </div>

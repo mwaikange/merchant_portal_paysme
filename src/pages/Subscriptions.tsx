@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CreditCard, MessageSquare, Check, Copy, Loader2, X } from "lucide-react";
+import { CalendarClock, CreditCard, MessageSquare, Check, Copy, Loader2, X } from "lucide-react";
 import { useBulkSmsAccess } from "@/hooks/useBulkSmsAccess";
 import { PaycodeModal } from "@/components/PaycodeModal";
 import { TownAutocomplete } from "@/components/TownAutocomplete";
@@ -130,6 +130,7 @@ const Subscriptions = () => {
   const [pendingPaycodeOpen, setPendingPaycodeOpen] = useState(false);
   const [pendingPaymentLoadingKey, setPendingPaymentLoadingKey] = useState<string | null>(null);
   const [purchasePreview, setPurchasePreview] = useState<{ plan: SubscriptionPlan; term: { duration: number; price: number } } | null>(null);
+  const [requestingRenewal, setRequestingRenewal] = useState(false);
 
   const subscriptionPlans: SubscriptionPlan[] = [{
     id: "starter",
@@ -618,6 +619,31 @@ const handleSMSTopUp = async () => {
   const smsTopUpPrice = smsTopUp * smsUnitPrice;
   const smsVatAmount = Math.round(smsTopUpPrice * 15) / 100;
   const smsCustomerTotal = Math.round((smsTopUpPrice + smsVatAmount) * 100) / 100;
+  const renewalDaysRemaining = activeSubscription?.end_date
+    ? Math.ceil((new Date(activeSubscription.end_date).getTime() - Date.now()) / 86400000)
+    : null;
+  const renewalIsOpen = renewalDaysRemaining !== null && renewalDaysRemaining >= 0 && renewalDaysRemaining <= 30;
+  const renewalOpenDate = activeSubscription?.end_date
+    ? new Date(new Date(activeSubscription.end_date).getTime() - 30 * 86400000)
+    : null;
+
+  const requestRenewal = async () => {
+    if (!activeSubscription || !renewalIsOpen) return;
+    setRequestingRenewal(true);
+    try {
+      const { data, error } = await (supabase as any).rpc('request_merchant_subscription_renewal', {
+        p_subscription_id: activeSubscription.id,
+      });
+      if (error) throw error;
+      const request = Array.isArray(data) ? data[0] : data;
+      const { data: alert, error: alertError } = await supabase.functions.invoke('merchant-renewal-admin-alert', { body: { renewal_request_id: request?.renewal_request_id } });
+      toast({ title: 'Renewal requested', description: `${alertError || !alert?.sent ? 'Your request is in the Admin portal; the email alert was not confirmed.' : 'PaySME Admin has been notified by email.'}${request?.request_reference ? ` · ${request.request_reference}` : ''}` });
+    } catch (error: any) {
+      toast({ title: 'Renewal request not submitted', description: error?.message || 'Please contact PaySME Admin.', variant: 'destructive' });
+    } finally {
+      setRequestingRenewal(false);
+    }
+  };
   const hasRecoverableTransaction = (generatedCode?: string | null, transactionId?: string | null) =>
     transactions.some(transaction =>
       (generatedCode ? transaction.generated_code === generatedCode : transaction.transaction_id === transactionId)
@@ -682,11 +708,18 @@ const handleSMSTopUp = async () => {
                     </p>
                   </div>
                 </div>
+                <div className="mt-5 border-t border-white/10 pt-5">
+                  <Button type="button" onClick={requestRenewal} disabled={!renewalIsOpen || requestingRenewal} className="bg-[#f0b429] font-bold text-[#1e2320] hover:bg-[#d99c12] disabled:bg-white/15 disabled:text-white/45">
+                    {requestingRenewal ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarClock className="mr-2 h-4 w-4" />}Request Renewal
+                  </Button>
+                  {!renewalIsOpen && renewalOpenDate && <p className="mt-2 text-xs text-white/60">Renewal opens 30 days before expiry, on {renewalOpenDate.toLocaleDateString()}.</p>}
+                  {renewalIsOpen && <p className="mt-2 text-xs text-yellow-200">Renewal is available. PaySME will contact you to confirm the updated agreement.</p>}
+                </div>
               </CardContent>
             </Card>}
 
           {/* Subscription Plans */}
-          <div className="mb-12">
+          <div className="hidden" aria-hidden="true">
             <div className="mb-12 rounded-md border border-yellow-400/25 bg-black/35 px-6 py-10 text-center shadow-[0_18px_40px_rgba(0,0,0,0.25)]">
               <h2 className="text-3xl font-bold text-white">Choose Your Subscription Plan</h2>
               <p className="mt-4 text-base font-medium text-white/75">Select the plan that best fits your business needs</p>
@@ -797,6 +830,10 @@ const handleSMSTopUp = async () => {
                 </Card>)}
             </div>
           </div>
+
+          <Card className="mb-12 border-yellow-400/30 bg-[#222922] text-white">
+            <CardHeader><CardTitle>Your PaySME package is managed by PaySME</CardTitle><CardDescription className="text-white/65">Package purchases and changes are completed through the signed Merchant Services Agreement. Contact PaySME if you need a commercial change.</CardDescription></CardHeader>
+          </Card>
 
           {/* SMS Top-up Section */}
           {canUseBulkSms ? <Card>

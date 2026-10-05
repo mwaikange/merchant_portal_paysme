@@ -70,12 +70,12 @@ async function sendNotification(
       <body style="margin:0;background:#f3f4ef;padding:28px;font-family:Arial,sans-serif;color:#172018;">
         <div style="max-width:640px;margin:0 auto;overflow:hidden;border-radius:18px;background:#ffffff;box-shadow:0 12px 35px rgba(23,32,24,.12);">
           <div style="background:#19231c;padding:26px 30px;color:#ffffff;">
-            <p style="margin:0 0 8px;color:#f6c431;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">PaySME Launch Waitlist</p>
-            <h1 style="margin:0;font-size:25px;">New merchant signup</h1>
+            <p style="margin:0 0 8px;color:#f6c431;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">PaySME Merchant Interest</p>
+            <h1 style="margin:0;font-size:25px;">New merchant interest</h1>
           </div>
           <div style="padding:28px 30px;">
             <div style="margin-bottom:24px;border-radius:14px;background:#fff8dc;padding:18px;text-align:center;">
-              <div style="font-size:13px;color:#6b5a11;">Current waitlist</div>
+              <div style="font-size:13px;color:#6b5a11;">Merchant Interest requests</div>
               <div style="font-size:38px;font-weight:800;color:#172018;">${waitlistCount}</div>
               <div style="font-size:13px;color:#6b5a11;">potential merchant${waitlistCount === 1 ? "" : "s"}</div>
             </div>
@@ -106,7 +106,7 @@ async function sendNotification(
       await client.send({
         from: `${Deno.env.get("SMTP_FROM_NAME") || "PaySME"} <${fromEmail}>`,
         to: recipient,
-        subject: `PaySME waitlist #${waitlistCount}: ${signup.company_name}`,
+        subject: `PaySME Merchant Interest #${waitlistCount}: ${signup.company_name}`,
         html,
       });
     } catch (sendError) {
@@ -294,6 +294,10 @@ Deno.serve(async (req) => {
     const town = cleanText(body.town, 120);
     const email = cleanText(body.email, 254).toLowerCase();
     const mobile = cleanText(body.mobile, 32) || null;
+    const preferredPackage = cleanText(body.preferred_package, 30).toLowerCase();
+    const preferredDuration = Number(body.preferred_duration_months);
+    if (preferredPackage && !["starter", "growth", "scale", "corporate"].includes(preferredPackage)) throw new RequestError(400, "Choose a valid package");
+    if (body.preferred_duration_months != null && ![6, 12].includes(preferredDuration)) throw new RequestError(400, "Choose a 6- or 12-month term");
 
     if (keyPersonName.length < 2) throw new RequestError(400, "Enter the key person's name");
     if (companyName.length < 2) throw new RequestError(400, "Enter the company name");
@@ -327,6 +331,8 @@ Deno.serve(async (req) => {
         town,
         email,
         mobile,
+        preferred_package: preferredPackage || null,
+        preferred_duration_months: body.preferred_duration_months == null ? null : preferredDuration,
         source_ip_hash: sourceIpHash,
       })
       .select("waitlist_id, key_person_name, company_name, industry, town, email, mobile, created_at")

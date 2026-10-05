@@ -426,7 +426,7 @@ const Index = () => {
             <div className="nav-inner">
                 <a href="/faq">FAQ</a><span className="sep">|</span>
                 <a href="/pricing">PRICING</a><span className="sep">|</span>
-                <a href="/login">LOGIN</a><span className="sep">|</span>
+                <a href="/waitlist">REGISTER INTEREST</a><span className="sep">|</span>
                 <a href="/contact">CONTACT</a><span className="sep">|</span>
                 <a href="/terms">T&amp;C's</a>
             </div>
@@ -516,7 +516,7 @@ const Index = () => {
           <div id="mobile-portal-menu" className="mobile-portal-menu" aria-hidden={!isPortalMenuOpen}>
             <a href="/signup" className="mobile-portal-link">Signup as a Merchant</a>
             <button type="button" className="mobile-portal-link" onClick={openVendorInfo}>Signup as a Vendor</button>
-            <a href="/waitlist" className="mobile-portal-link">Join Waitlist</a>
+            <a href="/waitlist" className="mobile-portal-link">Register Interest</a>
           </div>
           <button
             type="button"
