@@ -382,7 +382,7 @@ const TrackTransactions = () => {
       case "paytoday":
         return "PayToday";
       case "kazang":
-        return "Kazang";
+        return "Lesaka";
       default:
         return transaction.tnx_fee_applies_to || transaction.payment_method || "Payment type pending";
     }
@@ -470,7 +470,7 @@ const TrackTransactions = () => {
       mtc_maris: "MTC Maris",
       paypulse: "PayPulse",
       paytoday: "PayToday",
-      kazang: "Kazang",
+      kazang: "Lesaka",
       not_paid: "Not Paid Yet",
       unknown: "Other",
     }),
@@ -744,7 +744,7 @@ const TrackTransactions = () => {
                       <SelectItem value="mtc_maris">MTC Maris</SelectItem>
                       <SelectItem value="paypulse">PayPulse</SelectItem>
                       <SelectItem value="paytoday">PayToday</SelectItem>
-                      <SelectItem value="kazang">Kazang</SelectItem>
+                      <SelectItem value="kazang">Lesaka</SelectItem>
                       <SelectItem value="not_paid">Not Paid Yet</SelectItem>
                       <SelectItem value="unknown">Other</SelectItem>
                     </SelectContent>

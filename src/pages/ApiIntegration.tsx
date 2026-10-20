@@ -24,6 +24,7 @@ import {
   qrSvgDataUri,
 } from "@/lib/merchantQrLinks";
 import { QrEmailDialog } from "@/components/QrEmailDialog";
+import { LesakaCredentialsForm } from "@/components/LesakaCredentialsForm";
 
 // Form validation schema
 const productFormSchema = z.object({
@@ -134,7 +135,7 @@ const facilitatorOptions = [
   { key: "wayame", label: "WayaMe", requiresCardPlan: false, description: "Verify the WayaMe/UPI payment address linked to your receiving account.", placeholder: "e.g. yourbusiness@wayame" },
   { key: "paypulse", label: "PayPulse", requiresCardPlan: false, description: "Enter the merchant code PayPulse issued directly to your business.", placeholder: "PayPulse merchant code" },
   { key: "paytoday", label: "PayToday", requiresCardPlan: false, description: "Your PayToday merchant code.", placeholder: "PayToday merchant code" },
-  { key: "kazang", label: "Kazang", requiresCardPlan: false, description: "Enter the merchant code Kazang issued directly to your business.", placeholder: "Kazang merchant code" },
+  { key: "kazang", label: "Lesaka", requiresCardPlan: false, description: "Enter your Lesaka API username and password.", placeholder: "Lesaka Store ID (optional)" },
 ];
 
 const getPlanKey = (planType?: string | null) => {
@@ -966,6 +967,7 @@ const ApiIntegration = () => {
                     </div>
 
                     {facilitatorOptions.map(option => {
+                      if (option.key === "kazang") return merchant ? <LesakaCredentialsForm key={merchant.merchant_id} merchantId={merchant.merchant_id} disabled={loadingFacilitators} /> : null;
                       const saved = getFacilitatorCode(option.key);
                       const cardBlocked = option.requiresCardPlan && !planRule?.card_payments_enabled;
                       const isSaving = savingFacilitator === option.key;

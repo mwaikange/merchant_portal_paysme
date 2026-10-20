@@ -1,6 +1,10 @@
-# PaySME SDK v1.11.1
+# PaySME SDK v1.12.0
 
 **Dynamic, Centrally Managed Payment Integration**
+
+Lesaka uses the Lesaka 4All voucher API through PaySME's server. Customers enter a 16-digit voucher PIN, and the server checks that the voucher is Active, unexpired, denominated in `NAD`, and worth exactly the checkout amount before redeeming its full balance. The SDK displays confirmation only after the server verifies redemption and settlement. An uncertain request must be retried with the same voucher for the same checkout.
+
+PaySME completes the shared integration UAT once. Each merchant then saves their own live Lesaka username and password under API > Facilitator Merchant Codes > Lesaka. Both values are encrypted before database storage; only the backend decrypts them for the matching merchant's payment. Store ID is optional. The SDK and hosted checkout never receive provider credentials, and no merchant-site integration change is required. The internal provider key remains `kazang` for compatibility. Staging never marks real payments paid. See [server setup](../../../docs/lesaka-4all-integration.md).
 
 Checkout now collects a required Town before Email Address and Mobile Number. A custom, non-native suggestion panel begins after three characters, matches without case sensitivity, prioritises names that start with the query, and still allows manual town entry.
 

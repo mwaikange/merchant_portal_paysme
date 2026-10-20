@@ -58,6 +58,10 @@ verify_jwt = false
 [functions.mobiwand-payment]
 verify_jwt = false
 
+# Authenticated merchant API permissions are checked inside the handler.
+[functions.lesaka-credentials]
+verify_jwt = false
+
 [functions.wayame-payment]
 verify_jwt = false
 

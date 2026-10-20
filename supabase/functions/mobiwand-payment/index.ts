@@ -1,4 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
+import { amountMinor, lesakaConfig, lesakaPlatformConfig, LesakaError, LESAKA_PENDING_MESSAGE, lesakaRequest, pinFingerprint, verifyVoucher, voucherPin } from "../_shared/lesaka-4all.ts";
+import { decryptLesakaCredentials } from "../_shared/lesaka-credential-storage.ts";
 
 type ProviderKey = "mtc_maris" | "paypulse" | "paytoday" | "kazang";
 const providerKeys: ProviderKey[] = ["mtc_maris", "paypulse", "paytoday", "kazang"];
@@ -187,6 +189,8 @@ async function initiatePayment(req: Request) {
     return jsonResponse({ error: "provider must be mtc_maris, paypulse, paytoday or kazang" }, 400);
   }
 
+  if (provider === "kazang") return jsonResponse({ error: "Lesaka vouchers must use confirm_provider_code; MobiWand initiation is not supported." }, 400);
+
   const merchantId = asString(body.merchant_id || body.vendor_uuid);
   const apiKey = asString(body.api_key);
   const generatedCode = asString(body.generated_code).trim();
@@ -315,6 +319,7 @@ async function initiatePayment(req: Request) {
 }
 
 async function confirmProviderCode(body: Record<string, unknown>) {
+  if (body.provider === "kazang") return await confirmLesakaVoucher(body);
   const provider = body.provider as ProviderKey;
   const merchantId = asString(body.merchant_id || body.vendor_uuid);
   const apiKey = asString(body.api_key);
@@ -371,6 +376,7 @@ async function confirmProviderCode(body: Record<string, unknown>) {
 }
 
 function requestProviderCode(body: Record<string, unknown>) {
+  if (body.provider === "kazang") return jsonResponse({ error: "Lesaka uses a purchased 16-digit voucher PIN, not an SMS Paycode." }, 400);
   const provider = body.provider as ProviderKey;
   const merchantId = asString(body.merchant_id || body.vendor_uuid);
   const apiKey = asString(body.api_key);
@@ -390,6 +396,147 @@ function requestProviderCode(body: Record<string, unknown>) {
     error: `${providerConfig(provider).displayName} Paycode request API is awaiting provider credentials`,
     code: "provider_request_api_pending",
   }, 501);
+}
+
+async function confirmLesakaVoucher(body: Record<string, unknown>, serverAuthorized = false) {
+  const platform = lesakaPlatformConfig(key => Deno.env.get(key));
+  if (!platform) return jsonResponse({ ok: false, error: LESAKA_PENDING_MESSAGE, code: "lesaka_not_configured" }, 503);
+  if (platform.environment === "staging" && !serverAuthorized) return jsonResponse({ error: "Lesaka staging requires server authorization" }, 403);
+  const pin = voucherPin(body.confirmation_code);
+  const merchantId = asString(body.merchant_id || body.vendor_uuid);
+  const apiKey = asString(body.api_key);
+  const generatedCode = asString(body.generated_code).trim();
+  if (!merchantId || (!apiKey && body.hosted_payment !== true) || !generatedCode) {
+    return jsonResponse({ error: "merchant_id, generated_code, and SDK api_key are required" }, 400);
+  }
+  let merchantQuery = supabase.from("merchants").select("merchant_id, business_name").eq("merchant_id", merchantId);
+  if (body.hosted_payment !== true) merchantQuery = merchantQuery.eq("api_key", apiKey);
+  const { data: merchant, error: merchantError } = await merchantQuery.maybeSingle();
+  if (merchantError) throw merchantError;
+  if (!merchant) return jsonResponse({ error: "Invalid merchant credentials" }, 401);
+
+  const { data: transaction, error: transactionError } = await supabase.from("transactions")
+    .select("*").eq("merchant_id", merchantId).eq("generated_code", generatedCode).maybeSingle();
+  if (transactionError) throw transactionError;
+  if (!transaction) return jsonResponse({ error: "PaySME code was not found" }, 404);
+  const { data: credentials, error: credentialsError } = await supabase.from("lesaka_merchant_credentials")
+    .select("encrypted_credentials, store_id, credential_version")
+    .eq("merchant_id", transaction.merchant_id).eq("environment", platform.environment).maybeSingle();
+  if (credentialsError) throw new LesakaError("Lesaka payments are unavailable for this merchant.", 503, "lesaka_credentials_unavailable");
+  const merchantCredentials = credentials ? await decryptLesakaCredentials(credentials.encrypted_credentials, transaction.merchant_id, platform.environment, key => Deno.env.get(key)) : null;
+  const config = lesakaConfig(key => Deno.env.get(key), merchantCredentials);
+  if (!config) return jsonResponse({ error: "Lesaka credentials have not been configured for this merchant.", code: "lesaka_merchant_not_configured" }, 503);
+  // Restricted vendor obligations are not enabled for voucher payments yet.
+  if (transaction.vendor_redeemable === false || transaction.vendor_obligation_id ||
+      (Array.isArray(transaction.allowed_payment_methods) && !transaction.allowed_payment_methods.includes("kazang"))) {
+    return jsonResponse({ error: "Lesaka voucher payments are not available for this checkout" }, 403);
+  }
+  const minor = amountMinor(transaction.amount);
+  const fingerprint = await pinFingerprint(pin, config.fingerprintSecret);
+  const { data: savedAttempt, error: savedError } = await supabase.from("lesaka_voucher_attempts")
+    .select("*").eq("transaction_id", transaction.transaction_id).eq("environment", config.environment).maybeSingle();
+  if (savedError) throw savedError;
+  let attempt = savedAttempt;
+  if (attempt && (attempt.voucher_fingerprint !== fingerprint || attempt.amount_minor !== minor)) {
+    return jsonResponse({ error: "Use the original voucher for this checkout or contact support.", code: "lesaka_attempt_conflict" }, 409);
+  }
+  if (attempt?.status === "tested") return jsonResponse({ ok: true, status: "tested", environment: "staging", provider: "kazang", generated_code: generatedCode });
+  if (attempt && ["paid", "redeemed"].includes(attempt.status) && transaction.status === "paid" && transaction.payment_method === "kazang" && transaction.facilitator_id === attempt.facilitator_id && amountMinor(transaction.amount_paid) === minor) {
+    const { error } = await supabase.from("lesaka_voucher_attempts").update({ status: "paid", completed_at: new Date().toISOString() }).eq("attempt_id", attempt.attempt_id);
+    if (error) throw error;
+    return jsonResponse({ ok: true, status: "paid", provider: "kazang", generated_code: generatedCode, transaction_id: transaction.transaction_id });
+  }
+  if (transaction.status !== "pending" || transaction.finalized === true) {
+    return jsonResponse({ error: "This PaySME code is no longer pending" }, 409);
+  }
+  if (attempt && attempt.credential_version !== credentials.credential_version) {
+    return jsonResponse({ error: "The Lesaka account for this payment has changed. Contact support before retrying.", code: "lesaka_account_changed" }, 409);
+  }
+  if (attempt?.status === "reconciliation_required") {
+    return jsonResponse({ error: "This voucher payment needs support review. Do not submit another voucher.", code: "lesaka_reconciliation_required" }, 409);
+  }
+
+  // Recheck the same plan/billing/merchant rules used to display payment options.
+  const eligibilityResponse = await fetch(`${supabaseUrl}/functions/v1/checkout-eligibility`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey },
+    body: JSON.stringify({ merchant_id: merchantId, api_key: apiKey, hosted_payment: body.hosted_payment === true, amount_nad: transaction.amount }),
+  });
+  const eligibility = await eligibilityResponse.json();
+  const stagingAllowed = config.environment === "staging" && serverAuthorized && !eligibility.billing?.locked && eligibility.plan?.other_payment_types_enabled === true && eligibility.methods?.kazang?.credentials_present === true && eligibility.methods?.kazang?.merchant_enabled === true && eligibility.methods?.kazang?.status !== "rejected";
+  if (!eligibilityResponse.ok || (!eligibility.methods?.kazang?.enabled && !stagingAllowed)) {
+    return jsonResponse({ error: "Lesaka voucher payments are not available for this checkout" }, 403);
+  }
+
+  if (!attempt) {
+    const { data: setup, error: setupError } = await supabase.from("merchant_payment_facilitators")
+      .select("facilitator_id, provider_merchant_code, enabled, status").eq("merchant_id", merchantId).eq("provider_key", "kazang").maybeSingle();
+    if (setupError) throw setupError;
+    if (!setup?.facilitator_id || !setup.enabled || setup.status === "rejected") {
+      return jsonResponse({ error: "Lesaka is not active for this merchant" }, 409);
+    }
+    const statusReference = crypto.randomUUID();
+    const status = await lesakaRequest(config, "status", { pin, clientReference: statusReference, requestTime: new Date().toISOString(), ...(credentials.store_id ? { storeId: credentials.store_id } : {}) });
+    verifyVoucher(status, statusReference, minor);
+    // Commit the stable redemption reference before calling Lesaka. A unique
+    // transaction and voucher fingerprint prevent parallel checkout attempts.
+    const { data: inserted, error: insertError } = await supabase.from("lesaka_voucher_attempts").insert({
+      transaction_id: transaction.transaction_id, merchant_id: merchantId,
+      facilitator_id: setup.facilitator_id, merchant_code: credentials.store_id || "",
+      environment: config.environment, voucher_fingerprint: fingerprint, amount_minor: minor,
+      credential_version: credentials.credential_version,
+    }).select("*").single();
+    if (insertError?.code === "23505") return jsonResponse({ error: "This voucher or checkout is already being processed. Retry the original checkout with the same voucher." }, 409);
+    if (insertError) throw insertError;
+    attempt = inserted;
+  }
+
+  if (attempt.status !== "redeemed") {
+    try {
+      // On retry, skip status (the voucher may now be Consumed) and reuse the
+      // exact reference, time and store ID recorded before the first request.
+      const response = await lesakaRequest(config, "redeem", {
+        pin, clientReference: attempt.attempt_id, requestTime: new Date(attempt.request_time).toISOString(), ...(attempt.merchant_code ? { storeId: attempt.merchant_code } : {}),
+      });
+      const receipt = verifyVoucher(response, attempt.attempt_id, minor, true);
+      const { error } = await supabase.from("lesaka_voucher_attempts").update({
+        status: "redeemed", provider_transaction_id: receipt.id, error_code: null, trace_id: null,
+      }).eq("attempt_id", attempt.attempt_id);
+      if (error) throw error;
+      attempt.provider_transaction_id = receipt.id;
+    } catch (error) {
+      const knownError = error instanceof LesakaError ? error : null;
+      // Preserve every ambiguous outcome for retry/reconciliation; never
+      // replace its reference or expose a raw response body to the customer.
+      await supabase.from("lesaka_voucher_attempts").update({
+        status: "uncertain", error_code: knownError?.code || "lesaka_storage_failed", trace_id: knownError?.traceId || null,
+      }).eq("attempt_id", attempt.attempt_id).in("status", ["redeeming", "uncertain"]);
+      throw knownError || new LesakaError("This voucher payment needs verification. Retry the same voucher.", 502, "lesaka_outcome_unknown");
+    }
+  }
+
+  if (config.environment === "staging") {
+    const { error } = await supabase.from("lesaka_voucher_attempts").update({ status: "tested", completed_at: new Date().toISOString() }).eq("attempt_id", attempt.attempt_id);
+    if (error) throw error;
+    return jsonResponse({ ok: true, status: "tested", environment: "staging", provider: "kazang", generated_code: generatedCode });
+  }
+  await forwardSuccess({
+    attempt_id: attempt.attempt_id, transaction_id: transaction.transaction_id, merchant_id: merchantId,
+    facilitator_id: attempt.facilitator_id, provider_key: "kazang", partner_code: "",
+    merchant_code: attempt.merchant_code, merchant_transaction_number: generatedCode,
+    tracking_id: attempt.attempt_id, amount: minor / 100, origin_url: null,
+    payment_transaction_number: attempt.provider_transaction_id,
+  }, transaction);
+  const { data: settled, error: settleError } = await supabase.from("transactions").select("status, payment_method, facilitator_id, amount_paid")
+    .eq("transaction_id", transaction.transaction_id).single();
+  if (settleError) throw settleError;
+  const paid = settled.status === "paid" && settled.payment_method === "kazang" && settled.facilitator_id === attempt.facilitator_id && amountMinor(settled.amount_paid) === minor;
+  const { error: completeError } = await supabase.from("lesaka_voucher_attempts").update({
+    status: paid ? "paid" : "reconciliation_required", completed_at: new Date().toISOString(),
+  }).eq("attempt_id", attempt.attempt_id);
+  if (completeError) throw completeError;
+  if (!paid) return jsonResponse({ error: "The voucher was redeemed but this checkout needs support review. Do not submit another voucher.", code: "lesaka_reconciliation_required" }, 409);
+  return jsonResponse({ ok: true, status: "paid", provider: "kazang", generated_code: generatedCode, transaction_id: transaction.transaction_id });
 }
 
 function providerStatus(value: string) {
@@ -499,6 +646,7 @@ async function processCallback(url: URL) {
     .maybeSingle();
   if (attemptError) throw attemptError;
   if (!attempt) return callbackResponse(channel, null, "failed", "Payment attempt was not found", 404);
+  if (attempt.provider_key === "kazang") return callbackResponse(channel, attempt, "failed", "Lesaka voucher payments do not use MobiWand callbacks", 400);
   if (!statusCode || !trackingId || trackingId !== attempt.tracking_id) {
     return callbackResponse(channel, attempt, "failed", "Invalid MobiWand callback", 400);
   }
@@ -603,12 +751,16 @@ Deno.serve(async (req) => {
       if (body.vendor_obligation_id && req.headers.get("Authorization") !== `Bearer ${serviceRoleKey}`) {
         return jsonResponse({ error: "Restricted vendor checkout requires server authorization" }, 401);
       }
+      if (body.provider === "kazang" && body.action === "confirm_provider_code") {
+        return await confirmLesakaVoucher(body, req.headers.get("Authorization") === `Bearer ${serviceRoleKey}`);
+      }
       if (body.action === "request_provider_code") return requestProviderCode(body);
       if (body.action === "confirm_provider_code") return await confirmProviderCode(body);
       return await initiatePayment(req);
     }
     return jsonResponse({ error: "Method not allowed" }, 405);
   } catch (error) {
+    if (error instanceof LesakaError) return jsonResponse({ ok: false, error: error.message, code: error.code, trace_id: error.traceId }, error.status);
     console.error("mobiwand-payment error", error);
     if (req.method === "GET") {
       const url = new URL(req.url);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Copy, Loader2, X } from "lucide-react";
@@ -24,7 +24,7 @@ const mobiWandProviders: Record<MobiWandProvider, { name: string; accountName: s
   mtc_maris: { name: "MTC Maris", accountName: "MTC Maris", logo: "/pay-home/facilitators/maris.jpg" },
   paypulse: { name: "PayPulse", accountName: "PayPulse", logo: "/pay-home/facilitators/paypulse.png" },
   paytoday: { name: "PayToday", accountName: "PayToday USSD", logo: "/pay-home/facilitators/paytoday-payment.png" },
-  kazang: { name: "Kazang", accountName: "Kazang", logo: "/pay-home/facilitators/kazang.png" },
+  kazang: { name: "Lesaka", accountName: "Lesaka", logo: "/pay-home/facilitators/kazang.png" },
 };
 
 type AdumoInitResponse = {
@@ -96,7 +96,7 @@ export function PaycodeModal({
   const [mobiWandProvider, setMobiWandProvider] = useState<MobiWandProvider | null>(null);
   const [mobiWandLoading, setMobiWandLoading] = useState(false);
   const [mobiWandError, setMobiWandError] = useState<string | null>(null);
-  const [mobiWandStep, setMobiWandStep] = useState<"warning" | "code" | "waiting" | "passed">("warning");
+  const [mobiWandStep, setMobiWandStep] = useState<"warning" | "code" | "waiting" | "passed" | "paid" | "tested">("warning");
   const [mobiWandCode, setMobiWandCode] = useState("");
   const [mobiWandSeconds, setMobiWandSeconds] = useState(180);
   const [mobiWandApprovalSeconds, setMobiWandApprovalSeconds] = useState(7);
@@ -106,6 +106,16 @@ export function PaycodeModal({
   const [wayamePayment, setWayamePayment] = useState<WayaMePaymentResponse | null>(null);
   const [wayameSimulationStep, setWayameSimulationStep] = useState<"idle" | "waiting" | "passed">("idle");
   const [wayameSimulationSeconds, setWayameSimulationSeconds] = useState(7);
+  const checkoutVersion = useRef(0);
+
+  useEffect(() => {
+    checkoutVersion.current += 1;
+    setMobiWandProvider(null);
+    setMobiWandStep("warning");
+    setMobiWandCode("");
+    setMobiWandError(null);
+    setMobiWandLoading(false);
+  }, [isOpen, generatedCode]);
 
   useEffect(() => {
     const fetchEligibility = async () => {
@@ -133,13 +143,13 @@ export function PaycodeModal({
   }, [isOpen, paymentData?.merchantId, paymentData?.amount]);
 
   useEffect(() => {
-    if (!mobiWandProvider || mobiWandStep !== "code" || mobiWandSeconds <= 0) return;
+    if (!mobiWandProvider || mobiWandProvider === "kazang" || mobiWandStep !== "code" || mobiWandSeconds <= 0) return;
     const timer = window.setInterval(() => setMobiWandSeconds(seconds => Math.max(0, seconds - 1)), 1000);
     return () => window.clearInterval(timer);
   }, [mobiWandProvider, mobiWandStep, mobiWandSeconds]);
 
   useEffect(() => {
-    if (!mobiWandProvider || mobiWandStep !== "waiting") return;
+    if (!mobiWandProvider || mobiWandProvider === "kazang" || mobiWandStep !== "waiting") return;
     const timer = window.setInterval(() => {
       setMobiWandApprovalSeconds(seconds => {
         if (seconds <= 1) {
@@ -343,9 +353,40 @@ export function PaycodeModal({
     }
   };
 
-  const confirmMobiWandPayment = () => {
+  const confirmMobiWandPayment = async () => {
     if (!mobiWandProvider) return;
     setMobiWandError(null);
+    if (mobiWandProvider === "kazang") {
+      if (mobiWandLoading || !/^\d{16}$/.test(mobiWandCode)) return;
+      const version = checkoutVersion.current;
+      setMobiWandLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("mobiwand-payment", {
+          body: {
+            action: "confirm_provider_code", provider: "kazang", hosted_payment: true,
+            merchant_id: paymentData?.merchantId, generated_code: generatedCode,
+            confirmation_code: mobiWandCode,
+          },
+        });
+        if (version !== checkoutVersion.current) return;
+        if (error) {
+          const response = error.context instanceof Response ? await error.context.json().catch(() => null) : null;
+          throw new Error(response?.error || "Voucher verification is incomplete. Retry the same voucher for this checkout.");
+        }
+        if (!data?.ok || !["paid", "tested"].includes(data.status)) throw new Error(data?.error || "The voucher payment was not confirmed.");
+        setMobiWandCode("");
+        setMobiWandStep(data.status);
+        if (data.status === "paid") {
+          window.dispatchEvent(new CustomEvent("paysme:payment-success", { detail: data }));
+          toast({ title: "Payment confirmed", description: "Lesaka confirmed this voucher payment." });
+        }
+      } catch (error) {
+        if (version === checkoutVersion.current) setMobiWandError(error instanceof Error ? error.message : "Voucher verification is unavailable.");
+      } finally {
+        if (version === checkoutVersion.current) setMobiWandLoading(false);
+      }
+      return;
+    }
     setMobiWandApprovalSeconds(7);
     setMobiWandStep("waiting");
   };
@@ -567,7 +608,7 @@ export function PaycodeModal({
                   Pay via PayToday
                 </button>
                 <button type="button" disabled className="w-full rounded bg-gray-500 px-4 py-2 text-sm font-semibold text-gray-200 opacity-80">
-                  Pay via Kazang
+                  Pay via Lesaka
                 </button>
                 <div className="rounded-md border border-gray-500 bg-gray-800 p-3 text-center text-sm font-semibold text-gray-100">
                   {disabledPaymentMessage}
@@ -616,8 +657,11 @@ export function PaycodeModal({
                 onClick={() => openMobiWand("kazang")}
                 className="mt-2 w-full rounded bg-[#B3D31B] px-4 py-2 text-sm font-semibold text-black hover:bg-[#A1BE18]"
               >
-                Pay via Kazang
+                Pay via Lesaka
               </Button>
+            )}
+            {!billingLocked && eligibility?.methods?.kazang?.reason?.includes("not available yet") && (
+              <Button disabled className="w-full bg-[#B3D31B] text-black opacity-60">Lesaka — Coming soon</Button>
             )}
 
             {!billingLocked && methodEnabled("card") && (
@@ -666,7 +710,14 @@ export function PaycodeModal({
                 ? "mx-auto mb-5 w-44 max-w-full rounded-xl object-contain"
                 : "mx-auto mb-5 max-h-16 max-w-40 rounded-lg bg-white p-2 object-contain"}
             />
-            {mobiWandStep === "passed" ? (
+            {mobiWandStep === "paid" || mobiWandStep === "tested" ? (
+              <div className="py-5 text-center">
+                <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-[#B3D31B]" />
+                <h4 className="text-lg font-bold text-white">{mobiWandStep === "paid" ? "Payment confirmed" : "Test voucher redeemed"}</h4>
+                <p className="mt-2 text-sm text-gray-200">{mobiWandStep === "paid" ? "Lesaka confirmed this voucher payment." : "Staging test complete. No real payment was marked paid."}</p>
+                <Button onClick={mobiWandStep === "paid" ? onClose : closeMobiWand} className="mt-5 w-full">Close</Button>
+              </div>
+            ) : mobiWandStep === "passed" ? (
               <div className="flex flex-col items-center justify-center py-3 text-center">
                 <CheckCircle2 className={`mx-auto mb-3 h-12 w-12 ${mobiWandProvider === "kazang" ? "text-[#B3D31B]" : "text-green-400"}`} />
                 <h4 className="text-lg font-bold text-white">PASSED: Simulation Testing Event.</h4>
@@ -681,11 +732,11 @@ export function PaycodeModal({
             ) : mobiWandStep === "warning" ? (
               <>
                 <h4 className="mb-3 text-lg font-bold text-white">
-                  {mobiWandProvider === "kazang" ? "Purchase an EasyPay Voucher" : `Pay with ${mobiWandProviders[mobiWandProvider].name}`}
+                  {mobiWandProvider === "kazang" ? "Pay with a Lesaka 4All voucher" : `Pay with ${mobiWandProviders[mobiWandProvider].name}`}
                 </h4>
                 <p className="mb-5 text-sm leading-6 text-gray-200">
                   {mobiWandProvider === "kazang" ? (
-                    <>Visit a participating Kazang retailer and purchase an EasyPay Voucher for exactly{" "}
+                    <>Use a Lesaka 4All voucher purchased from a participating Kazang retailer for exactly{" "}
                       <strong className="text-white">N$ {Number(paymentData?.amount || 0).toFixed(2)}</strong>.
                       Keep the receipt safe. It contains a unique 16-digit PIN. Continue when you have your voucher.</>
                   ) : (
@@ -707,11 +758,11 @@ export function PaycodeModal({
             ) : (
               <>
                 <h4 className="mb-2 text-lg font-bold text-white">
-                  {mobiWandProvider === "kazang" ? "Enter your EasyPay Voucher PIN" : `Enter your ${mobiWandProviders[mobiWandProvider].name} Paycode`}
+                  {mobiWandProvider === "kazang" ? "Enter your Lesaka 4All voucher PIN" : `Enter your ${mobiWandProviders[mobiWandProvider].name} Paycode`}
                 </h4>
                 <p className="mb-2 text-sm leading-6 text-gray-200">
                   {mobiWandProvider === "kazang" ? (
-                    <>Enter the 16-digit PIN printed on your EasyPay Voucher. Confirm that its value is{" "}
+                    <>Enter the 16-digit PIN printed on your Lesaka 4All voucher. The full voucher balance must be{" "}
                       <strong className="text-white">N$ {Number(paymentData?.amount || 0).toFixed(2)}</strong>.</>
                   ) : (
                     <>Enter the confirmation Paycode sent to <strong className="text-white">{providerMobile}</strong>.</>
@@ -723,15 +774,15 @@ export function PaycodeModal({
                   </p>
                 )}
                 <input
-                  type="text"
+                  type={mobiWandProvider === "kazang" ? "password" : "text"}
                   inputMode="numeric"
-                  autoComplete="one-time-code"
+                  autoComplete={mobiWandProvider === "kazang" ? "off" : "one-time-code"}
                   maxLength={mobiWandProvider === "kazang" ? 16 : 12}
                   value={mobiWandCode}
                   onChange={(event) => { setMobiWandCode(event.target.value.replace(/\D/g, "")); setMobiWandError(null); }}
-                  disabled={mobiWandStep === "waiting"}
+                  disabled={mobiWandStep === "waiting" || mobiWandLoading}
                   placeholder={mobiWandProvider === "kazang" ? "16-digit PIN" : "Code"}
-                  aria-label={mobiWandProvider === "kazang" ? "EasyPay Voucher 16-digit PIN" : `${mobiWandProviders[mobiWandProvider].name} confirmation Paycode`}
+                  aria-label={mobiWandProvider === "kazang" ? "Lesaka 4All voucher 16-digit PIN" : `${mobiWandProviders[mobiWandProvider].name} confirmation Paycode`}
                   className={`mb-3 w-full rounded-md border border-gray-400 bg-white px-3 py-3 text-center text-xl font-bold tracking-[0.25em] text-gray-900 outline-none ${mobiWandProvider === "kazang" ? "focus:border-[#B3D31B] focus:ring-2 focus:ring-[#B3D31B]/30" : "focus:border-[#fbbf24] focus:ring-2 focus:ring-[#fbbf24]/30"}`}
                   autoFocus
                 />

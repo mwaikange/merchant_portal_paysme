@@ -1,5 +1,17 @@
 # PaySME SDK Changelog
 
+## v1.12.0 - 2026-10-20
+
+- Renamed customer-facing Kazang payment options to Lesaka across SDK and hosted checkout.
+- Uses each merchant's own Lesaka username/password, entered in the merchant portal and encrypted before database storage.
+- Requires both credentials; Store ID is optional. The SDK never receives provider credentials.
+- Separates shared integration UAT from each merchant's live setup and protects retries against account changes.
+
+- Replaced Kazang's simulated approval with server-verified Lesaka 4All voucher status and redemption calls.
+- Uses `NAD`, a 16-digit PIN, exact full-balance validation, and durable references for safe retries.
+- Masks voucher PIN entry and shows payment confirmation only after verified production settlement.
+- Keeps voucher payments unavailable while credentials and UAT approval are pending; staging cannot mark real payments paid.
+
 ## v1.11.1 - 2026-09-10
 
 - Changed Kazang actions to the supplied Lesaka EasyPay button colour (`#B3D31B`) with black text.

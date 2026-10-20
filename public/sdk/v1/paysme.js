@@ -1,5 +1,5 @@
 /**
- * PaySME SDK v1.11.1
+ * PaySME SDK v1.12.0
  * Dynamic, Centrally Managed Payment Modal
  * https://www.paysme.site/sdk/v1/paysme.js
  *
@@ -13,7 +13,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "1.11.1";
+  var VERSION = "1.12.0";
   var PENDING_LOOKUP_URL = "https://zvoqrqdnuupdefsuiurt.supabase.co/rest/v1/rpc/lookup_pending_transaction";
   var EDGE_FN_URL = "https://zvoqrqdnuupdefsuiurt.supabase.co/functions/v1/payments";
   var REQUEST_TO_PAY_URL = "https://zvoqrqdnuupdefsuiurt.supabase.co/functions/v1/mobile-request-to-pay";
@@ -751,10 +751,89 @@
     }, 300);
   }
 
-  function showMobiWandPreflight(overlay, cfg, provider, callbacks) {
+  function showLesakaCheckout(overlay, cfg, callbacks) {
     var modal = overlay.querySelector(".paysme-modal");
     if (!modal || modal.querySelector(".paysme-provider-panel")) return;
-    var displayName = provider === "mtc_maris" ? "MTC Maris" : provider === "paypulse" ? "PayPulse" : provider === "paytoday" ? "PayToday" : "Kazang";
+    var panel = document.createElement("div");
+    panel.className = "paysme-provider-panel";
+    var busy = false;
+    function closePanel() { if (!busy) removeProviderPanel(panel); }
+    function showMessage(title, message) {
+      panel.innerHTML = '<img class="paysme-provider-logo paysme-provider-logo-kazang" src="' + PROVIDER_LOGOS.kazang + '" alt="Lesaka">' +
+        '<h4>' + esc(title) + '</h4><p>' + esc(message) + '</p>' +
+        '<button class="paysme-btn paysme-provider-back" data-lesaka-back>Back</button>' + providerBrandHtml();
+      panel.querySelector("[data-lesaka-back]").addEventListener("click", closePanel);
+    }
+    showMessage("Lesaka 4All voucher", "Checking voucher payment availability...");
+    modal.appendChild(panel);
+    setBaseFooterHidden(modal, true);
+    fetchEligibility(cfg).then(function (eligibility) {
+      if (!panel.isConnected) return;
+      if (!methodEnabled(eligibility, "kazang")) {
+        showMessage("Voucher payments unavailable", methodReason(eligibility, "kazang", "Please choose another payment method."));
+        return;
+      }
+      panel.innerHTML = '<img class="paysme-provider-logo paysme-provider-logo-kazang" src="' + PROVIDER_LOGOS.kazang + '" alt="Lesaka">' +
+        '<h4>Pay with a Lesaka 4All voucher</h4>' +
+        '<p>Use a Lesaka 4All voucher from a participating Kazang retailer. Its full balance must be exactly <strong style="color:#fff">N$ ' + esc(Number(cfg.amount_nad || 0).toFixed(2)) + '</strong>. Enter the 16-digit PIN from your receipt.</p>' +
+        '<input class="paysme-provider-code paysme-provider-code-kazang" data-lesaka-pin type="password" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="16-digit PIN" aria-label="Lesaka 4All voucher 16-digit PIN">' +
+        '<div class="paysme-provider-error" role="alert"></div>' +
+        '<button class="paysme-btn paysme-btn-kazang" data-lesaka-confirm disabled>Confirm payment</button>' +
+        '<button class="paysme-btn paysme-provider-back" data-lesaka-back>Back</button>' + providerBrandHtml();
+      var pin = panel.querySelector("[data-lesaka-pin]");
+      var confirm = panel.querySelector("[data-lesaka-confirm]");
+      var back = panel.querySelector("[data-lesaka-back]");
+      var errorBox = panel.querySelector(".paysme-provider-error");
+      back.addEventListener("click", closePanel);
+      pin.addEventListener("input", function () {
+        pin.value = pin.value.replace(/\D/g, "");
+        confirm.disabled = busy || !/^\d{16}$/.test(pin.value);
+        errorBox.style.display = "none";
+      });
+      confirm.addEventListener("click", function () {
+        if (busy || !/^\d{16}$/.test(pin.value)) return;
+        busy = true;
+        pin.disabled = confirm.disabled = back.disabled = true;
+        confirm.innerHTML = '<span class="paysme-spinner"></span> Verifying voucher...';
+        fetch(MOBIWAND_EDGE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY },
+          body: JSON.stringify({ action: "confirm_provider_code", provider: "kazang", merchant_id: cfg.vendor_uuid, api_key: cfg.api_key, generated_code: cfg._generated_code, confirmation_code: pin.value })
+        }).then(function (response) {
+          return response.json().then(function (data) {
+            if (!response.ok || !data.ok || (data.status !== "paid" && data.status !== "tested")) throw new Error(data.error || "The voucher payment was not confirmed.");
+            return data;
+          });
+        }).then(function (data) {
+          busy = false;
+          pin.value = "";
+          if (data.status === "tested") {
+            showMessage("Test voucher redeemed", "Staging test complete. No real payment was marked paid.");
+            return;
+          }
+          showMessage("Payment confirmed", "Lesaka confirmed this voucher payment.");
+          var result = Object.assign({ payment_method: "kazang" }, data);
+          window.dispatchEvent(new CustomEvent("paysme:payment-success", { detail: result }));
+          if (typeof cfg.on_payment_success === "function") cfg.on_payment_success(result);
+          if (callbacks && typeof callbacks.on_payment_success === "function") callbacks.on_payment_success(result);
+        }).catch(function (error) {
+          busy = false;
+          pin.disabled = back.disabled = false;
+          confirm.disabled = !/^\d{16}$/.test(pin.value);
+          confirm.textContent = "Retry same voucher";
+          errorBox.textContent = error.message || "Voucher verification is incomplete. Retry the same voucher for this checkout.";
+          errorBox.style.display = "block";
+        });
+      });
+      pin.focus();
+    });
+  }
+
+  function showMobiWandPreflight(overlay, cfg, provider, callbacks) {
+    if (provider === "kazang") return showLesakaCheckout(overlay, cfg, callbacks);
+    var modal = overlay.querySelector(".paysme-modal");
+    if (!modal || modal.querySelector(".paysme-provider-panel")) return;
+    var displayName = provider === "mtc_maris" ? "MTC Maris" : provider === "paypulse" ? "PayPulse" : provider === "paytoday" ? "PayToday" : "Lesaka";
     var accountName = provider === "paytoday" ? "PayToday USSD" : displayName;
     var isKazang = provider === "kazang";
     var amountText = Number(cfg.amount_nad || 0).toFixed(2);
@@ -891,7 +970,7 @@
         '<button class="paysme-btn paysme-btn-disabled" disabled>Pay via MTC Maris</button>' +
         '<button class="paysme-btn paysme-btn-disabled" disabled>Pay via PayPulse</button>' +
         '<button class="paysme-btn paysme-btn-disabled" disabled>Pay via PayToday</button>' +
-        '<button class="paysme-btn paysme-btn-disabled" disabled>Pay via Kazang</button>' +
+        '<button class="paysme-btn paysme-btn-disabled" disabled>Pay via Lesaka</button>' +
         '<div class="paysme-disabled-warning">Payments are temporarily disabled for this merchant.</div>';
     }
 
@@ -909,7 +988,9 @@
       html += '<button class="paysme-btn paysme-btn-paytoday" id="' + prefix + '-paytoday">Pay via PayToday</button>';
     }
     if (methodEnabled(eligibility, "kazang")) {
-      html += '<button class="paysme-btn paysme-btn-kazang" id="' + prefix + '-kazang">Pay via Kazang</button>';
+      html += '<button class="paysme-btn paysme-btn-kazang" id="' + prefix + '-kazang">Pay via Lesaka</button>';
+    } else if (methodReason(eligibility, "kazang", "").indexOf("not available yet") !== -1) {
+      html += '<button class="paysme-btn paysme-btn-kazang" disabled>Lesaka — Coming soon</button>';
     }
     if (methodEnabled(eligibility, "card")) {
       html += '<button class="paysme-btn paysme-btn-card" id="' + prefix + '-card">Pay via Card</button>';
@@ -1597,7 +1678,7 @@
                     html += '<button class="paysme-btn paysme-btn-paytoday" id="paysme-failed-paytoday">Pay via PayToday</button>';
                   }
                   if (methodEnabled(eligibility, "kazang")) {
-                    html += '<button class="paysme-btn paysme-btn-kazang" id="paysme-failed-kazang">Pay via Kazang</button>';
+                    html += '<button class="paysme-btn paysme-btn-kazang" id="paysme-failed-kazang">Pay via Lesaka</button>';
                   }
                   options.innerHTML = html || disabledMethodHtml("Other payment methods", "No other payment methods are available for this checkout.");
                   var wayameBtn = overlay.querySelector("#paysme-failed-wayame");

@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
+import { lesakaPlatformConfig, LESAKA_PENDING_MESSAGE } from "../_shared/lesaka-4all.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -265,9 +266,18 @@ Deno.serve(async (req) => {
       },
     };
 
+    const lesakaPlatform = lesakaPlatformConfig(key => Deno.env.get(key));
+    let lesakaCredentialsPresent = false;
+    if (lesakaPlatform) {
+      const { data: credentials, error: credentialsError } = await supabase.from("lesaka_merchant_credentials")
+        .select("credential_version").eq("merchant_id", merchant.merchant_id).eq("environment", lesakaPlatform.environment).maybeSingle();
+      if (credentialsError) throw new Error("Lesaka readiness could not be checked");
+      lesakaCredentialsPresent = Boolean(credentials);
+    }
+
     for (const key of customerFacilitatorKeys) {
       const facilitator = facilitatorsByKey.get(key);
-      const hasCode = !!facilitator?.provider_merchant_code;
+      const hasCode = key === "kazang" ? lesakaCredentialsPresent : !!facilitator?.provider_merchant_code;
       const merchantEnabled = facilitator?.enabled !== false;
       const metadata = (facilitator?.metadata || {}) as Record<string, unknown>;
       const wayameVerified = key !== "wayame" || (
@@ -275,13 +285,18 @@ Deno.serve(async (req) => {
         metadata.verification_status === "verified" &&
         Boolean(metadata.merchant_alias)
       );
-      const enabled = Boolean(planRule.other_payment_types_enabled && hasCode && merchantEnabled && facilitator?.status !== "rejected" && wayameVerified);
+      // Staging is available only through server-authorized UAT calls, never
+      // offered to real customers by hosted checkout or the browser SDK.
+      const lesakaReady = key !== "kazang" || lesakaPlatform?.environment === "production";
+      const enabled = Boolean(planRule.other_payment_types_enabled && hasCode && merchantEnabled && facilitator?.status !== "rejected" && wayameVerified && lesakaReady);
       methods[key] = {
         enabled,
         reason: !planRule.other_payment_types_enabled
           ? "Other payment types are not available on this plan"
+          : !lesakaReady
+            ? LESAKA_PENDING_MESSAGE
           : !hasCode
-            ? "Facilitator merchant code required"
+            ? key === "kazang" ? "Lesaka username and password required" : "Facilitator merchant code required"
             : !wayameVerified
               ? "Verify the merchant WayaMe payment address before enabling checkout"
             : !merchantEnabled
@@ -291,6 +306,7 @@ Deno.serve(async (req) => {
                 : null,
         status: facilitator?.status || "not_configured",
         provider_merchant_code_present: hasCode,
+        ...(key === "kazang" ? { credentials_present: lesakaCredentialsPresent } : {}),
         merchant_enabled: merchantEnabled,
       };
     }
