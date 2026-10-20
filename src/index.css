@@ -55,9 +55,15 @@
     overflow-x: hidden;
   }
 
-body:has(.portal-frame-scale-90) {
+  body:has(.portal-frame-scale-90) {
     zoom: 0.9;
+    /* Keep the scaled portal as tall as the visible viewport. */
+    height: calc(100% / 0.9);
   }
+}
+
+html:has(.portal-frame) {
+  overflow: hidden;
 }
 
 body:has(.portal-frame) {
