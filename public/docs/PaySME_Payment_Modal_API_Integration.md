@@ -1,6 +1,6 @@
 # PaySME Payment Modal — API Integration Guide
 
-**Version:** 1.10.0 · **Updated:** 3 September 2026
+**Version:** 1.12.0 · **Updated:** 21 October 2026
 **Audience:** Merchants integrating PaySME payments on web, mobile, or server-side.
 
 ---
@@ -15,6 +15,9 @@ The PaySME Payment Modal is a hosted/embeddable checkout that lets your customer
 4. **PayPulse** — available to approved merchants through the PaySME checkout.
 5. **PayToday** — available to approved merchants through the PaySME checkout.
 6. **Card Payment** — processed via **Adumo Online** (Visa / Mastercard).
+7. **Lesaka 4All vouchers** — customers redeem a 16-digit voucher PIN using the Lesaka account configured for your business.
+
+Payment options are determined by your merchant configuration and checkout eligibility. Enable Lesaka under **Merchant Portal > API & integration > Facilitator Merchant Codes > Lesaka**; see section 5.6.
 
 There are **two ways** to use it:
 
@@ -47,8 +50,8 @@ An implementation is correct only when all of the following are true:
 4. Treat `on_payment_success` and `paysme:payment-success` as paid only when PaySME has verified a real provider/vendor completion.
 5. Never unlock goods, credit an account, fulfil an order, or mark an invoice paid from a modal screen, redirect query string, or generated PaySME Code alone.
 6. Verify server-side merchant webhooks before fulfilment. Webhook verification is the authoritative path for unattended fulfilment.
-7. Never place Adumo, MTC Maris, PayPulse, PayToday, WayaMe sponsor, Supabase service-role, or webhook-secret credentials in browser code.
-8. Current provider testing-result screens do not mark transactions paid and do not fire payment-success callbacks, SMS messages, or merchant webhooks.
+7. Never place Lesaka usernames/passwords, Adumo, MTC Maris, PayPulse, PayToday, WayaMe sponsor, Supabase service-role, or webhook-secret credentials in browser code.
+8. Any provider simulation-result screen is a demonstration only: it cannot mark a transaction paid or fire payment-success callbacks, SMS messages, or merchant webhooks. Lesaka uses the verified voucher redemption flow in section 5.6.
 9. `requestToPay` success means that PaySME created a pending transaction and accepted its payment-link SMS for delivery. It does **not** mean the invoice was paid.
 10. Customer-facing Request-to-Pay integrations must use the SDK-rendered **Create Payment Request** button. Do not replace, recolour, rename, or imitate it.
 11. After a successful pending request, the customer notification must read exactly **Request to Pay Sent. Check your SMS.** Do not add payment-completion wording.
@@ -79,11 +82,21 @@ The implementer should not ask the merchant for facilitator credentials. Those a
 
 ---
 
+### 1.5 Changes since the v1.10 guide
+
+| Release | Integration changes |
+|---|---|
+| v1.11.0 | Added the voucher payment option, merchant-controlled checkout eligibility, and failed-payment retry routing. |
+| v1.11.1 | Updated the Lesaka artwork and lime-green button, and corrected the customer flow to use the receipt's 16-digit voucher PIN. |
+| v1.12.0 | Added merchant-specific Lesaka username/password setup, encrypted credential storage, server-verified 4All voucher status and full redemption in NAD, and protected retries for uncertain outcomes. Customer-facing names are Lesaka; the existing `kazang` integration key remains compatible. |
+
+The public SDK methods and merchant snippet parameters remain compatible. Existing static, dynamic, pending-code and hosted checkouts use the saved merchant configuration automatically. This guide now covers Lesaka setup, checkout requests, payment results, eligibility, errors and retries in addition to the existing VAT and Request-to-Pay contracts.
+
 ## 2. Base URLs
 
 | Resource | URL |
 |---|---|
-| SDK v1.10.0 (stable v1 URL) | `https://www.paysme.site/sdk/v1/paysme.js` |
+| SDK v1.12.0 (stable v1 URL) | `https://www.paysme.site/sdk/v1/paysme.js` |
 | Hosted Payment Page | `https://paysme.site/pay/:merchant_id?invoice_id=...&amount=...&product_name=...` |
 | API Base | `https://zvoqrqdnuupdefsuiurt.supabase.co/functions/v1` |
 
@@ -95,6 +108,7 @@ The implementer should not ask the merchant for facilitator credentials. Those a
 | `POST /mobile-request-to-pay` | Opt-in SMS-only Request-to-Pay for mobile/app integrations |
 | `POST /adumo-card` | Initiate a card payment (returns Adumo JWT + redirect form fields) |
 | `POST /checkout-eligibility` | Resolve enabled payment methods for the merchant and transaction |
+| `POST /mobiwand-payment` | Checkout-managed Lesaka voucher confirmation using the compatible `kazang` provider key; see section 5.6 |
 | `POST /webhooks-payments` | Internal — vendor redemption, Adumo notify, merchant webhook fan-out |
 | `GET  /adumo-card?action=redirect-success` | Adumo success return URL |
 | `GET  /adumo-card?action=redirect-failed`  | Adumo failure return URL |
@@ -109,6 +123,7 @@ The implementer should not ask the merchant for facilitator credentials. Those a
 | `mobile-request-to-pay` | Merchant integration credentials in body: Merchant ID UUID + PaySME API key |
 | `create_subscription`, `sms_topup` | **Authenticated merchant** — Supabase user JWT |
 | `adumo-card` | Public; identified by `merchant_id` + `api_key` in body |
+| Lesaka confirmation through `mobiwand-payment` | SDK supplies PaySME request headers and the Merchant ID/API key; Lesaka credentials are loaded only by PaySME's backend |
 | SDK calls | SDK injects the anon key automatically |
 
 **Never** put a Supabase `service_role` key, webhook secret, or payment-provider credential in the browser. The generated snippet contains only the PaySME merchant integration identifiers intended for SDK initialization: **vendor_uuid** (the UUID-format Merchant ID) and the PaySME **api_key**. Do not substitute unrelated portal or provider credentials.
@@ -342,7 +357,7 @@ on_success({
 })
 ```
 
-A verified payment callback/event contains the provider, generated PaySME Code, status, and available transaction identifiers. Do not manufacture or dispatch this event from merchant code.
+A verified payment callback/event contains the provider, generated PaySME Code, status, and available transaction identifiers. Lesaka results use `provider: "kazang"` and `payment_method: "kazang"` for compatibility; display the method to customers as **Lesaka**. Do not manufacture or dispatch this event from merchant code.
 
 ```js
 window.addEventListener("paysme:payment-success", (event) => {
@@ -378,7 +393,7 @@ If the SDK is loaded inside a WebView, the app developer must:
 
 4. Wait for the method the app uses, for example `window.PaySME?.renderRequestToPayButton`, before enabling the in-app payment button. Do not block on an exact `PaySME.version` string.
 5. After ten seconds, offer the generated hosted checkout URL instead of displaying an indefinite loading state.
-6. Reload or recreate the WebView when validating an SDK release. Log `window.PaySME?.version` for diagnostics; the current release is `1.10.0`, but exact minor-version equality must not control readiness.
+6. Reload or recreate the WebView when validating an SDK release. Log `window.PaySME?.version` for diagnostics; the current release is `1.12.0`, but exact minor-version equality must not control readiness.
 7. Allow navigation to PaySME, Adumo, and approved banking/deep-link destinations used by the enabled payment methods.
 8. Treat messages bridged from JavaScript to native code as UI events only. Signed PaySME server webhooks remain the authoritative payment proof.
 
@@ -572,6 +587,66 @@ The production checkout will create one WayaMe payment request for the existing 
 
 The current interface exposes **Approve in Bank App** and a QR presentation path. Selecting the button or tapping the QR starts a seven-second waiting state and then displays **PASSED: Simulation Testing Event. WayaMe confirmation API is awaiting provider credentials.** The current QR is a placeholder testing URI: scanning it on another device does not transmit the live merchant, amount, or PaySME transaction request. A real scannable payment request requires the provider's documented QR/deep-link format. The testing event never marks a transaction paid and does not fire callbacks, SMS, or merchant notifications.
 
+### 5.6 Lesaka 4All voucher payments
+
+#### Merchant setup
+
+Each merchant uses the Lesaka API username and password issued to their own business. Save them under **Merchant Portal > API & integration > Facilitator Merchant Codes > Lesaka**:
+
+| Field | Required | Purpose |
+|---|---|---|
+| Lesaka API username | Yes | Authenticates your business's Lesaka account |
+| Lesaka API password | Yes | Authenticates the same Lesaka account |
+| Store ID | Only if Lesaka supplies it | Optional store metadata; it is not a replacement for either credential |
+
+Save both required fields together and enable **Show this button to customers**. Lesaka appears when the merchant's saved setup, payment-method visibility, subscription and account standing allow it. An old Kazang merchant code alone does not configure a Lesaka account.
+
+PaySME encrypts both credentials before database storage and loads them only on the backend for the merchant associated with the PaySME transaction. Saved usernames and passwords are not returned to the portal, SDK or hosted checkout. Leave the fields empty unless replacing the saved credentials; enter both again to replace them. Credentials cannot be replaced while voucher attempts need resolution.
+
+Continue using the **PaySME Merchant ID UUID** as `vendor_uuid` and your **PaySME API key** as `api_key` in the generated snippet. Do not substitute a Lesaka username or Store ID. A merchant's identity comes from the PaySME transaction; Store ID is optional metadata, not an instruction to credit a different merchant.
+
+#### SDK and hosted checkout
+
+There is no separate Lesaka SDK method or additional credential parameter. `PaySME.init(config)`, `PaySME.create(config)` and `PaySME.pending(config)` offer **Pay via Lesaka** when it is available. Hosted payment links use the same saved merchant setup. In Request-to-Pay mode, the customer can select Lesaka on the hosted page opened from the SMS link.
+
+1. The customer selects **Pay via Lesaka** and uses a Lesaka 4All voucher from a participating Kazang retailer.
+2. The voucher's full balance must equal the checkout's final payable amount, including any VAT already calculated by PaySME. Currency is **NAD** (N$). Partial redemption and vouchers with a different balance are not accepted by this checkout.
+3. The customer enters the **16-digit PIN from the receipt** into the masked voucher field and selects **Confirm payment**. This is a voucher PIN, not an SMS code or a PaySME Code.
+4. PaySME checks that the voucher is Active, unexpired and matches the currency and amount. It then redeems the full balance and verifies the resulting receipt and zero remaining balance.
+5. Only verified redemption and matching PaySME settlement produce **Payment confirmed**, `status: "paid"`, the normal payment-success signal and merchant payment notifications.
+
+Opening the modal, entering a PIN or receiving a PaySME Code does not prove payment. Keep the existing `on_success` code-generation behavior; use the verified-payment callback/event for the customer interface and the signed `payment.paid` webhook for unattended fulfilment.
+
+#### Checkout request and compatible identifiers
+
+The SDK submits this PaySME request automatically. Existing integrations do not need a custom voucher form or direct Lesaka API calls:
+
+```http
+POST /mobiwand-payment
+Content-Type: application/json
+```
+
+```json
+{
+  "action": "confirm_provider_code",
+  "provider": "kazang",
+  "merchant_id": "YOUR_PAYSME_MERCHANT_UUID",
+  "api_key": "YOUR_PAYSME_API_KEY",
+  "generated_code": "EXISTING_PAYSME_CODE",
+  "confirmation_code": "CUSTOMER_16_DIGIT_VOUCHER_PIN"
+}
+```
+
+`kazang` remains the stored facilitator/provider/payment-method key for compatibility. It identifies Lesaka in `checkout-eligibility` as `methods.kazang`, in payment responses and in existing integrations; do not rename the request value to `lesaka`. The SDK supplies PaySME authentication headers. Hosted checkout uses PaySME's hosted authorization flow.
+
+PaySME obtains the amount, merchant credentials and redemption reference from the stored transaction and backend records. The browser does not choose them. On the server, PaySME calls Lesaka's `POST /api/v2/voucher/status` and `POST /api/v2/voucher/redeem`; provider authentication stays between PaySME and Lesaka.
+
+#### Errors and retries
+
+If the connection times out or the outcome is uncertain, retain the **same PaySME checkout/code and the same voucher PIN**. PaySME retains the original redemption reference and protects against duplicate redemption. Do not create a new invoice, change merchant credentials or switch vouchers to work around an unresolved attempt.
+
+For an invalid, inactive, expired or mismatched voucher, follow the displayed error. For an uncertain result, retry the same voucher on the same checkout. If PaySME requests support review or reconciliation, stop submitting vouchers and contact support with the PaySME Code and any returned `traceId`; do not send PINs or passwords.
+
 ## 6. Merchant Webhooks
 
 Configure in **Dashboard → Profile → Webhook URL**.
@@ -622,6 +697,8 @@ created (pending)
    │
    ├── customer pays by WayaMe ──► signed notify/status verification ──► paid / finalized
    │
+   ├── customer pays by Lesaka ──► verified 4All redemption and settlement ──► paid / finalized
+   │
    └── customer redeems code at vendor ──► webhooks-payments ──► paid
                                                         │
                                                         └─► merchant webhook fired
@@ -655,6 +732,20 @@ created (pending)
 | 429 | `Too many payment requests` | Merchant/customer SMS rate limit reached |
 | 502 | `The payment was created, but the SMS could not be sent` | Retry with the same idempotency key |
 
+Lesaka voucher errors return a readable `error` and, where available, a machine-readable `code`:
+
+| HTTP | `code` | Handling |
+|---|---|---|
+| 400 | `invalid_voucher_pin` | Enter the 16-digit voucher PIN |
+| 409 | `voucher_mismatch` | Voucher balance/currency must match the final payable NAD amount |
+| 409 | `voucher_not_active` | Voucher is not Active or is expired |
+| 502 | `lesaka_outcome_unknown` | Retry the same voucher on the same checkout |
+| 409 | `lesaka_account_changed` | Contact support before retrying with changed merchant credentials |
+| 409 | `lesaka_reconciliation_required` | Do not submit another voucher; ask support to reconcile the payment |
+| 503 | `lesaka_not_configured` | Merchant/platform configuration is unavailable; choose an available method |
+
+Provider-reported failures may return a `lesaka_<number>` code and a `traceId`. Use the displayed message and retain those identifiers for support; a failed or uncertain response is not proof of payment.
+
 Adumo card error codes (returned in `error_code`):
 
 | Code | Meaning |
@@ -678,7 +769,7 @@ Adumo card error codes (returned in `error_code`):
 
 Run the SDK demo: <https://www.paysme.site/sdk/v1/demo.html>
 
-SDK v1.10.0 adds merchant VAT-settings lookup and clear Namibia VAT breakdowns while retaining the official `renderRequestToPayButton` customer-facing route introduced in v1.9.1. Existing `init`, `create`, and `pending` integrations keep their modal behavior automatically. Existing integrations using the stable v1 SDK URL receive compatible updates after reload and HTTP revalidation. During deployment checks, log `window.PaySME.version` and confirm the required SDK method exists; do not reject a compatible release solely because its minor version changed.
+SDK v1.12.0 includes merchant-specific Lesaka 4All voucher payments and retains merchant VAT lookup, the Namibia VAT breakdown and the official `renderRequestToPayButton` route. Existing `init`, `create` and `pending` integrations keep their behavior and use the saved Lesaka setup automatically. The stable v1 SDK URL receives compatible updates after reload and HTTP revalidation. Log `window.PaySME.version` and check the required method exists; do not reject a compatible release solely because its minor version changed. The card examples above are card-only data and must not be used as Lesaka credentials or voucher PINs.
 
 ---
 
@@ -694,6 +785,8 @@ SDK v1.10.0 adds merchant VAT-settings lookup and clear Namibia VAT breakdowns w
 - [ ] Card flow tested end-to-end with live amount of N$ 1.00
 - [ ] `on_success` does not fulfil an order or mark an invoice paid
 - [ ] Signed `payment.paid` webhook is verified before unattended fulfilment
+- [ ] If offering Lesaka, the merchant's own username/password are saved in the portal and its customer-facing button is enabled
+- [ ] Lesaka success requires verified full-value NAD redemption and settlement; an uncertain attempt retains the same voucher and checkout
 - [ ] Provider testing-result screens leave the PaySME transaction pending
 - [ ] If using Request-to-Pay, the app uses the SDK-rendered branded button and displays exactly Request to Pay Sent. Check your SMS.
 - [ ] Request-to-Pay never marks the invoice paid from the request result
@@ -710,7 +803,7 @@ Before handing the integration back, a developer or coding agent should report e
 4. Town, email, and accepted Namibian mobile formats validate correctly.
 5. PaySME Code generation returns `on_success` but does not trigger fulfilment.
 6. Closing the modal invokes only `on_cancel`.
-7. Provider testing flows end on the circled-check testing-result screen after seven seconds and do not fire `on_payment_success`.
+7. Provider simulation flows, where present, do not fire `on_payment_success`. Lesaka instead requires verified redemption and settlement, returns the compatible `kazang` key, and preserves the same voucher/checkout for uncertain retries.
 8. Server webhook verification uses the raw request body and webhook secret.
 9. No provider credentials, webhook secrets, or service-role keys appear in browser source, logs, screenshots, or commits.
 10. If the application selected Request-to-Pay, the SDK-rendered branded button is present, no facilitator/payment modal opens inside the app, the exact SMS-check confirmation is shown, and fulfilment still waits for the signed webhook.

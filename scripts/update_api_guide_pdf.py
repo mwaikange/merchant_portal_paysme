@@ -25,6 +25,8 @@ from reportlab.platypus import (
 ROOT = Path(__file__).resolve().parents[1]
 MARKDOWN_PATH = ROOT / "public" / "docs" / "PaySME_Payment_Modal_API_Integration.md"
 PDF_PATH = ROOT / "public" / "docs" / "PaySME_Payment_Modal_API_Integration.pdf"
+VERSION_MATCH = re.search(r"\*\*Version:\*\*\s*([\d.]+)", MARKDOWN_PATH.read_text(encoding="utf-8"))
+GUIDE_VERSION = VERSION_MATCH.group(1) if VERSION_MATCH else ""
 
 PAGE_WIDTH, PAGE_HEIGHT = A4
 LEFT_MARGIN = 18 * mm
@@ -79,7 +81,7 @@ def page_frame(canvas, doc):
     canvas.drawString(LEFT_MARGIN, PAGE_HEIGHT - 14 * mm, "PaySME API Integration Guide")
     canvas.setFont("Helvetica", 8)
     canvas.setFillColor(colors.HexColor("#667069"))
-    canvas.drawString(LEFT_MARGIN, 9 * mm, "PaySME Payment Modal and SDK")
+    canvas.drawString(LEFT_MARGIN, 9 * mm, f"PaySME Payment Modal and SDK - v{GUIDE_VERSION}")
     canvas.drawRightString(PAGE_WIDTH - RIGHT_MARGIN, 9 * mm, f"Page {doc.page}")
     canvas.restoreState()
 
@@ -245,7 +247,7 @@ def markdown_story(markdown: str, styles):
             index += 1
             continue
 
-        heading = re.match(r"^(#{1,3})\s+(.+)$", stripped)
+        heading = re.match(r"^(#{1,4})\s+(.+)$", stripped)
         if heading:
             level = len(heading.group(1))
             style = styles["title"] if level == 1 else styles["h2"] if level == 2 else styles["h3"]
@@ -326,7 +328,7 @@ def build_pdf():
         bottomMargin=17 * mm,
         title="PaySME Payment Modal API Integration Guide",
         author="PaySME",
-        subject="Merchant SDK and API integration",
+        subject=f"Merchant SDK and API integration - v{GUIDE_VERSION}",
     )
     doc.build(markdown_story(markdown, styles), onFirstPage=page_frame, onLaterPages=page_frame)
     print(PDF_PATH)
