@@ -16,6 +16,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PortalShell } from "@/components/PortalShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useBulkSmsAccess } from "@/hooks/useBulkSmsAccess";
@@ -164,20 +165,9 @@ export function PortalFrame({ children }: { children: ReactNode }) {
     : "Payments and portal sections are disabled because PaySME fees are overdue. Use the Pay Now button on Overview to settle the outstanding balance and restore access.";
 
   return (
-    <div className="portal-frame portal-frame-scale-90 h-full overflow-hidden" style={{ background: brand.page, color: brand.text }}>
-      {signingOut && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm">
-          <div className="rounded-xl border border-yellow-400/40 bg-[#222922] px-8 py-7 text-center shadow-2xl">
-            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[#f6c431]" />
-            <p className="text-lg font-bold text-white">Signing out...</p>
-            <p className="mt-1 text-sm text-white/60">Closing your merchant session.</p>
-          </div>
-        </div>
-      )}
-      <header
-        className="relative z-30 h-[61px] shrink-0 px-4 py-2.5 backdrop-blur"
-        style={{ background: "rgba(34,41,34,0.97)", borderBottom: `1px solid rgba(246,196,49,0.25)` }}
-      >
+    <PortalShell
+      pageKey={location.pathname}
+      header={
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <img src={paysmeLogoSmall} alt="PaySME" className="h-9 w-auto" />
@@ -192,24 +182,9 @@ export function PortalFrame({ children }: { children: ReactNode }) {
           </div>
           <div aria-hidden="true" />
         </div>
-      </header>
-
-      <div style={{ display: "flex", alignItems: "stretch", height: "calc(100% - 61px)", minHeight: 0, overflow: "hidden", background: brand.page }}>
-        <aside
-          className="flex flex-col p-3"
-          style={{
-            width: 238,
-            minWidth: 238,
-            minHeight: 0,
-            height: "100%",
-            overflowY: "hidden",
-            background: brand.sidebar,
-            borderRight: `1px solid ${brand.faint}`,
-            position: "relative",
-            top: 0,
-            alignSelf: "flex-start",
-          }}
-        >
+      }
+      sidebar={
+        <>
           <div className="mb-3 rounded-md p-3" style={{ border: `1px solid rgba(246,196,49,0.2)`, background: "rgba(0,0,0,0.2)" }}>
             <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: brand.yellow }}>PaySME Merchant Management Portal</p>
             <p className="mt-1 truncate text-sm font-semibold" style={{ color: brand.text }}>{merchant?.business_name || "PaySME"}</p>
@@ -280,112 +255,119 @@ export function PortalFrame({ children }: { children: ReactNode }) {
               </p>
             </div>
           )}
-          <div className="mt-auto pt-6">
-            <Button type="button" className="w-full" style={{ background: brand.yellow, color: brand.page }} onClick={handleSignOut} disabled={signingOut}>
-              {signingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
-              {signingOut ? "Signing Out" : "Sign Out"}
-            </Button>
-          </div>
-        </aside>
-
-        <main className="portal-frame-content h-full min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-5 lg:p-8" style={{ background: brand.page }}>
-          <div className="content-scale-75-shell">
-            <div className="content-scale-75">
-              <section
-                className="mb-6 rounded-md p-5"
-                style={{ background: brand.panel, border: `1px solid ${brand.faint}`, color: brand.text }}
-              >
-                <p className="text-xs uppercase tracking-[0.24em]" style={{ color: brand.yellow }}>Portal</p>
-                <h1 className="mt-2 text-2xl font-bold md:text-3xl" style={{ color: brand.text }}>{current.label}</h1>
-              </section>
-              {portalRestricted && (
-                <section
-                  className="mb-6 rounded-md p-4"
-                  style={{
-                    background: "rgba(246,196,49,0.12)",
-                    border: "1px solid rgba(246,196,49,0.45)",
-                    color: brand.text,
-                  }}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: brand.yellow }}>
-                    {lockTitle}
-                  </p>
-                  <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.78)" }}>
-                    {lockBody}
-                  </p>
-                </section>
-              )}
-              {!taxDirectiveSaved && location.pathname !== "/portal/tax-settings" && (
-                <section
-                  className="mb-6 rounded-md p-4"
-                  style={{ background: "rgba(246,196,49,0.12)", border: "1px solid rgba(246,196,49,0.45)", color: brand.text }}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: brand.yellow }}>
-                    Tax directive required
-                  </p>
-                  <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.78)" }}>
-                    Choose and save your VAT treatment once to unlock every paycode channel.
-                  </p>
-                  <Button className="mt-4" style={{ background: brand.yellow, color: brand.page }} onClick={() => navigate("/portal/tax-settings")}>
-                    Open Tax Settings
-                  </Button>
-                </section>
-              )}
-              {lockedSection ? (
-                <section
-                  className="rounded-md p-8 text-center"
-                  style={{
-                    background: "rgba(107,114,128,0.14)",
-                    border: "1px solid rgba(156,163,175,0.35)",
-                    color: brand.text,
-                  }}
-                >
-                  <div
-                    className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
-                    style={{ background: "rgba(107,114,128,0.28)", color: "rgba(255,255,255,0.72)" }}
-                  >
-                    <Lock className="h-6 w-6" />
-                  </div>
-                  <h2 className="text-2xl font-bold">{taxSectionLocked ? "Tax settings required" : "Portal section disabled"}</h2>
-                  <p className="mx-auto mt-3 max-w-xl text-sm" style={{ color: "rgba(255,255,255,0.72)" }}>
-                    {taxSectionLocked
-                      ? "Paycode generation stays locked until you choose and save your VAT treatment. This includes selecting ‘I do not charge VAT’."
-                      : billingAccessPending
-                      ? "This section will unlock automatically if the merchant account is in good standing."
-                      : "Payments are temporarily disabled. This section is unavailable while PaySME fees are overdue."}
-                  </p>
-                  <Button
-                    className="mt-6"
-                    style={{ background: brand.yellow, color: brand.page }}
-                    onClick={() => navigate(taxSectionLocked ? "/portal/tax-settings" : "/portal/dashboard")}
-                  >
-                    {taxSectionLocked ? "Open Tax Settings" : "Go to Overview"}
-                  </Button>
-                </section>
-              ) : children}
+        </>
+      }
+      sidebarFooter={
+        <Button type="button" className="w-full" style={{ background: brand.yellow, color: brand.page }} onClick={handleSignOut} disabled={signingOut}>
+          {signingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
+          {signingOut ? "Signing Out" : "Sign Out"}
+        </Button>
+      }
+      overlays={
+        <>
+          {signingOut && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm">
+              <div className="rounded-xl border border-yellow-400/40 bg-[#222922] px-8 py-7 text-center shadow-2xl">
+                <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[#f6c431]" />
+                <p className="text-lg font-bold text-white">Signing out...</p>
+                <p className="mt-1 text-sm text-white/60">Closing your merchant session.</p>
+              </div>
             </div>
-          </div>
-        </main>
-      </div>
-      {lockNoticeReason && (
-        <div
-          className="fixed bottom-6 right-6 z-50 max-w-sm rounded-md p-4 text-sm shadow-2xl"
+          )}
+          {lockNoticeReason && (
+            <div
+              className="fixed bottom-6 right-6 z-50 max-w-sm rounded-md p-4 text-sm shadow-2xl"
+              style={{
+                background: "#2f332f",
+                border: "1px solid rgba(246,196,49,0.6)",
+                color: brand.text,
+              }}
+            >
+              <p className="font-semibold" style={{ color: brand.yellow }}>
+                {lockNoticeReason === "tax" ? "Tax settings required" : "Portal section locked"}
+              </p>
+              <p className="mt-1" style={{ color: "rgba(255,255,255,0.75)" }}>
+                {lockNoticeReason === "tax"
+                  ? "Choose and save your VAT treatment in Tax Settings before generating paycodes."
+                  : "Payments are disabled. Please pay outstanding PaySME fees or notify the merchant urgently."}
+              </p>
+            </div>
+          )}
+        </>
+      }
+    >
+      <section
+        className="mb-6 rounded-md p-5"
+        style={{ background: brand.panel, border: `1px solid ${brand.faint}`, color: brand.text }}
+      >
+        <p className="text-xs uppercase tracking-[0.24em]" style={{ color: brand.yellow }}>Portal</p>
+        <h1 className="mt-2 text-2xl font-bold md:text-3xl" style={{ color: brand.text }}>{current.label}</h1>
+      </section>
+      {portalRestricted && (
+        <section
+          className="mb-6 rounded-md p-4"
           style={{
-            background: "#2f332f",
-            border: "1px solid rgba(246,196,49,0.6)",
+            background: "rgba(246,196,49,0.12)",
+            border: "1px solid rgba(246,196,49,0.45)",
             color: brand.text,
           }}
         >
-          <p className="font-semibold" style={{ color: brand.yellow }}>
-            {lockNoticeReason === "tax" ? "Tax settings required" : "Portal section locked"}
+          <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: brand.yellow }}>
+            {lockTitle}
           </p>
-          <p className="mt-1" style={{ color: "rgba(255,255,255,0.75)" }}>
-            {lockNoticeReason === "tax"
-              ? "Choose and save your VAT treatment in Tax Settings before generating paycodes."
-              : "Payments are disabled. Please pay outstanding PaySME fees or notify the merchant urgently."}
+          <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.78)" }}>
+            {lockBody}
           </p>
-        </div>
+        </section>
       )}
-    </div>
+      {!taxDirectiveSaved && location.pathname !== "/portal/tax-settings" && (
+        <section
+          className="mb-6 rounded-md p-4"
+          style={{ background: "rgba(246,196,49,0.12)", border: "1px solid rgba(246,196,49,0.45)", color: brand.text }}
+        >
+          <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: brand.yellow }}>
+            Tax directive required
+          </p>
+          <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.78)" }}>
+            Choose and save your VAT treatment once to unlock every paycode channel.
+          </p>
+          <Button className="mt-4" style={{ background: brand.yellow, color: brand.page }} onClick={() => navigate("/portal/tax-settings")}>
+            Open Tax Settings
+          </Button>
+        </section>
+      )}
+      {lockedSection ? (
+        <section
+          className="rounded-md p-8 text-center"
+          style={{
+            background: "rgba(107,114,128,0.14)",
+            border: "1px solid rgba(156,163,175,0.35)",
+            color: brand.text,
+          }}
+        >
+          <div
+            className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
+            style={{ background: "rgba(107,114,128,0.28)", color: "rgba(255,255,255,0.72)" }}
+          >
+            <Lock className="h-6 w-6" />
+          </div>
+          <h2 className="text-2xl font-bold">{taxSectionLocked ? "Tax settings required" : "Portal section disabled"}</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm" style={{ color: "rgba(255,255,255,0.72)" }}>
+            {taxSectionLocked
+              ? "Paycode generation stays locked until you choose and save your VAT treatment. This includes selecting ‘I do not charge VAT’."
+              : billingAccessPending
+              ? "This section will unlock automatically if the merchant account is in good standing."
+              : "Payments are temporarily disabled. This section is unavailable while PaySME fees are overdue."}
+          </p>
+          <Button
+            className="mt-6"
+            style={{ background: brand.yellow, color: brand.page }}
+            onClick={() => navigate(taxSectionLocked ? "/portal/tax-settings" : "/portal/dashboard")}
+          >
+            {taxSectionLocked ? "Open Tax Settings" : "Go to Overview"}
+          </Button>
+        </section>
+      ) : children}
+    </PortalShell>
   );
 }

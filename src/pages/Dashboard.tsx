@@ -20,6 +20,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PortalShell } from "@/components/PortalShell";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -389,20 +390,8 @@ const Dashboard = () => {
 
   return (
     <ProtectedRoute>
-      <div className="portal-frame portal-frame-scale-90 h-full overflow-hidden text-white" style={{ background: brand.page, color: brand.text }}>
-        {signingOut && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm">
-            <div className="rounded-xl border border-yellow-400/40 bg-[#222922] px-8 py-7 text-center shadow-2xl">
-              <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[#f6c431]" />
-              <p className="text-lg font-bold text-white">Signing out...</p>
-              <p className="mt-1 text-sm text-white/60">Closing your merchant session.</p>
-            </div>
-          </div>
-        )}
-        <header
-          className="relative z-30 h-[61px] shrink-0 px-4 py-2.5 backdrop-blur"
-          style={{ background: "rgba(34,41,34,0.97)", borderBottom: `1px solid rgba(246,196,49,0.25)` }}
-        >
+      <PortalShell
+        header={
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <img src={paysmeLogoSmall} alt="PaySME" className="h-9 w-auto" />
@@ -417,24 +406,9 @@ const Dashboard = () => {
             </div>
             <div aria-hidden="true" />
           </div>
-        </header>
-
-        <div style={{ display: "flex", alignItems: "stretch", height: "calc(100% - 61px)", minHeight: 0, overflow: "hidden", background: brand.page }}>
-          <aside
-            className="flex flex-col p-3"
-            style={{
-              width: 238,
-              minWidth: 238,
-              minHeight: 0,
-              height: "100%",
-              overflowY: "hidden",
-              background: brand.sidebar,
-              borderRight: `1px solid ${brand.faint}`,
-              position: "relative",
-              top: 0,
-              alignSelf: "flex-start",
-            }}
-          >
+        }
+        sidebar={
+          <>
             <div className="mb-3 rounded-md p-3" style={{ border: `1px solid rgba(246,196,49,0.2)`, background: "rgba(0,0,0,0.2)" }}>
               <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: brand.yellow }}>PaySME Merchant Management Portal</p>
               <p className="mt-1 truncate text-sm font-semibold" style={{ color: brand.text }}>{merchant?.business_name || "PaySME"}</p>
@@ -508,234 +482,241 @@ const Dashboard = () => {
                 </p>
               </div>
             )}
-            <div className="mt-auto pt-6">
-              <Button type="button" className="w-full" style={{ background: brand.yellow, color: brand.page }} onClick={handleSignOut} disabled={signingOut}>
-                {signingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
-                {signingOut ? "Signing Out" : "Sign Out"}
+          </>
+        }
+        sidebarFooter={
+          <Button type="button" className="w-full" style={{ background: brand.yellow, color: brand.page }} onClick={handleSignOut} disabled={signingOut}>
+            {signingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
+            {signingOut ? "Signing Out" : "Sign Out"}
+          </Button>
+        }
+        overlays={
+          <>
+            {signingOut && (
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm">
+                <div className="rounded-xl border border-yellow-400/40 bg-[#222922] px-8 py-7 text-center shadow-2xl">
+                  <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[#f6c431]" />
+                  <p className="text-lg font-bold text-white">Signing out...</p>
+                  <p className="mt-1 text-sm text-white/60">Closing your merchant session.</p>
+                </div>
+              </div>
+            )}
+          </>
+        }
+      >
+        {loading ? (
+          <div className="flex h-64 items-center justify-center rounded-md" style={{ border: `1px solid ${brand.faint}`, background: "rgba(255,255,255,0.05)", color: brand.text }}>
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: brand.yellow }} />
+            <span className="ml-2">Loading dashboard...</span>
+          </div>
+        ) : (
+          <>
+        <section
+          className="mb-6 flex flex-col gap-5 rounded-md p-5 shadow-2xl shadow-black/20 xl:flex-row xl:items-stretch xl:justify-between"
+          style={{ background: brand.panel, border: `1px solid ${brand.faint}`, color: brand.text }}
+        >
+          <div className="flex min-w-0 flex-1 flex-col justify-center">
+            <p className="text-xs uppercase tracking-[0.24em]" style={{ color: brand.yellow }}>Overview</p>
+            <h1 className="mt-2 text-2xl font-bold md:text-3xl" style={{ color: brand.text }}>Merchant performance</h1>
+            <p className="mt-1 text-sm" style={{ color: brand.muted }}>Live payment activity, customer growth, and subscription status.</p>
+          </div>
+          {hasOutstandingFee ? (
+            <div
+              className="grid gap-3 rounded-md p-4 sm:grid-cols-[1fr_auto] sm:items-center xl:min-w-[470px]"
+              style={{
+                background: billingStatus?.outstanding_status === "overdue" ? "rgba(239,68,68,0.14)" : "rgba(246,196,49,0.12)",
+                border: `1px solid ${billingStatus?.outstanding_status === "overdue" ? "rgba(248,113,113,0.55)" : "rgba(246,196,49,0.42)"}`,
+              }}
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <ReceiptText className="h-4 w-4" style={{ color: brand.yellow }} />
+                  <p className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: brand.yellow }}>
+                    Fees Outstanding{outstandingInvoiceMonth ? ` - ${outstandingInvoiceMonth}` : ""}
+                  </p>
+                </div>
+                <p className="mt-2 text-2xl font-extrabold leading-none md:text-3xl" style={{ color: brand.text }}>
+                  {formatCurrency(outstandingAmount)}
+                </p>
+                <p className="mt-2 text-sm" style={{ color: brand.muted }}>
+                  Code: <span className="font-semibold" style={{ color: brand.text }}>{billingStatus?.outstanding_generated_code || "Pending"}</span>
+                  {" "}• Due: {outstandingDueDate}
+                </p>
+              </div>
+              <Button
+                onClick={handlePayOutstandingFee}
+                className="w-full sm:w-auto"
+                style={{ background: brand.yellow, color: brand.page }}
+              >
+                Pay Now
               </Button>
             </div>
-          </aside>
+          ) : (
+            <Button onClick={() => navigate("/portal/api-integration")} className="w-fit" style={{ background: brand.yellow, color: brand.page }}>
+              <Plug className="mr-2 h-4 w-4" />
+              API & integration
+            </Button>
+          )}
+        </section>
 
-          <main className="h-full min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-5 lg:p-8" style={{ background: brand.page }}>
-            <div className="content-scale-75-shell">
-              <div className="content-scale-75">
-                {loading ? (
-                  <div className="flex h-64 items-center justify-center rounded-md" style={{ border: `1px solid ${brand.faint}`, background: "rgba(255,255,255,0.05)", color: brand.text }}>
-                    <Loader2 className="h-8 w-8 animate-spin" style={{ color: brand.yellow }} />
-                    <span className="ml-2">Loading dashboard...</span>
+        {billingLocked && (
+          <section
+            className="mb-6 rounded-md p-4"
+            style={{
+              background: "rgba(246,196,49,0.12)",
+              border: "1px solid rgba(246,196,49,0.45)",
+              color: brand.text,
+            }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: brand.yellow }}>
+              Portal temporarily limited
+            </p>
+            <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.78)" }}>
+              Payments are temporarily disabled because PaySME fees are overdue. Use Pay Now above to settle the outstanding balance and restore access.
+            </p>
+          </section>
+        )}
+
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {statCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <div key={card.title} className="rounded-md border p-5" style={card.style as CSSProperties}>
+                <div className="mb-5 flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold" style={{ color: brand.text }}>{card.title}</h3>
+                    {card.subtitle && <p className="mt-1 text-xs" style={{ color: "rgba(255,255,255,0.52)" }}>{card.subtitle}</p>}
                   </div>
-                ) : (
-                  <>
-                <section
-                  className="mb-6 flex flex-col gap-5 rounded-md p-5 shadow-2xl shadow-black/20 xl:flex-row xl:items-stretch xl:justify-between"
-                  style={{ background: brand.panel, border: `1px solid ${brand.faint}`, color: brand.text }}
-                >
-                  <div className="flex min-w-0 flex-1 flex-col justify-center">
-                    <p className="text-xs uppercase tracking-[0.24em]" style={{ color: brand.yellow }}>Overview</p>
-                    <h1 className="mt-2 text-2xl font-bold md:text-3xl" style={{ color: brand.text }}>Merchant performance</h1>
-                    <p className="mt-1 text-sm" style={{ color: brand.muted }}>Live payment activity, customer growth, and subscription status.</p>
-                  </div>
-                  {hasOutstandingFee ? (
-                    <div
-                      className="grid gap-3 rounded-md p-4 sm:grid-cols-[1fr_auto] sm:items-center xl:min-w-[470px]"
-                      style={{
-                        background: billingStatus?.outstanding_status === "overdue" ? "rgba(239,68,68,0.14)" : "rgba(246,196,49,0.12)",
-                        border: `1px solid ${billingStatus?.outstanding_status === "overdue" ? "rgba(248,113,113,0.55)" : "rgba(246,196,49,0.42)"}`,
-                      }}
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <ReceiptText className="h-4 w-4" style={{ color: brand.yellow }} />
-                          <p className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: brand.yellow }}>
-                            Fees Outstanding{outstandingInvoiceMonth ? ` - ${outstandingInvoiceMonth}` : ""}
-                          </p>
-                        </div>
-                        <p className="mt-2 text-2xl font-extrabold leading-none md:text-3xl" style={{ color: brand.text }}>
-                          {formatCurrency(outstandingAmount)}
-                        </p>
-                        <p className="mt-2 text-sm" style={{ color: brand.muted }}>
-                          Code: <span className="font-semibold" style={{ color: brand.text }}>{billingStatus?.outstanding_generated_code || "Pending"}</span>
-                          {" "}• Due: {outstandingDueDate}
-                        </p>
-                      </div>
-                      <Button
-                        onClick={handlePayOutstandingFee}
-                        className="w-full sm:w-auto"
-                        style={{ background: brand.yellow, color: brand.page }}
-                      >
-                        Pay Now
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button onClick={() => navigate("/portal/api-integration")} className="w-fit" style={{ background: brand.yellow, color: brand.page }}>
-                      <Plug className="mr-2 h-4 w-4" />
-                      API & integration
-                    </Button>
-                  )}
-                </section>
-
-                {billingLocked && (
-                  <section
-                    className="mb-6 rounded-md p-4"
-                    style={{
-                      background: "rgba(246,196,49,0.12)",
-                      border: "1px solid rgba(246,196,49,0.45)",
-                      color: brand.text,
-                    }}
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: brand.yellow }}>
-                      Portal temporarily limited
-                    </p>
-                    <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.78)" }}>
-                      Payments are temporarily disabled because PaySME fees are overdue. Use Pay Now above to settle the outstanding balance and restore access.
-                    </p>
-                  </section>
-                )}
-
-                <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {statCards.map((card) => {
-                    const Icon = card.icon;
-                    return (
-                      <div key={card.title} className="rounded-md border p-5" style={card.style as CSSProperties}>
-                        <div className="mb-5 flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="text-sm font-semibold" style={{ color: brand.text }}>{card.title}</h3>
-                            {card.subtitle && <p className="mt-1 text-xs" style={{ color: "rgba(255,255,255,0.52)" }}>{card.subtitle}</p>}
-                          </div>
-                          <div className="rounded-md p-2" style={{ border: `1px solid ${brand.faint}`, background: "rgba(0,0,0,0.2)" }}>
-                            <Icon className="h-4 w-4" />
-                          </div>
-                        </div>
-                        <p className="text-3xl font-bold tracking-tight" style={{ color: brand.text }}>{card.value}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="mb-8">
-                  {(() => {
-                    const now = new Date();
-                    let startDate: Date;
-                    let endDate: Date;
-                    let planType: string;
-                    let isExpired = false;
-                    let progressPercentage = 0;
-
-                    if (subscription && subscription.status === "active" && subscription.paycode_status === "paid") {
-                      startDate = new Date(subscription.start_date);
-                      endDate = new Date(subscription.end_date);
-                      planType = subscription.plan_type;
-                      isExpired = now > endDate;
-                      const totalDuration = endDate.getTime() - startDate.getTime();
-                      const elapsed = now.getTime() - startDate.getTime();
-                      progressPercentage = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
-                    } else {
-                      startDate = new Date(merchant?.created_at || Date.now());
-                      endDate = new Date(startDate.getTime() + 3 * 24 * 60 * 60 * 1000);
-                      planType = "Trial";
-                      isExpired = now > endDate;
-                      const totalDuration = 3 * 24 * 60 * 60 * 1000;
-                      const elapsed = now.getTime() - startDate.getTime();
-                      progressPercentage = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
-                    }
-
-                    return (
-                      <>
-                        <div className="relative rounded-md p-6" style={{ background: brand.panelSoft, border: `1px solid ${brand.faint}`, color: brand.text }}>
-                          <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                            <div>
-                              <p className="text-xs uppercase tracking-[0.2em]" style={{ color: brand.yellow }}>Subscription</p>
-                              <h3 className="mt-1 text-lg font-semibold">API Subscription - {planType} Plan</h3>
-                            </div>
-                            <p className="text-sm" style={{ color: brand.muted }}>
-                              End Date:{" "}
-                              {endDate.toLocaleDateString("en-GB", {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              })}
-                            </p>
-                          </div>
-                          <div className="h-3 w-full rounded-full" style={{ background: "rgba(0,0,0,0.35)" }}>
-                            <div
-                              className="h-3 rounded-full transition-all duration-500"
-                              style={{ width: `${progressPercentage}%`, background: progressPercentage >= 90 ? "#ef4444" : brand.yellow }}
-                            />
-                          </div>
-                        </div>
-
-                        {isExpired && (
-                          <button
-                            onClick={() => navigate("/portal/subscriptions")}
-                            className="mt-4 w-full cursor-pointer rounded-md p-4 text-left transition-colors"
-                            style={{ border: "1px solid rgba(248,113,113,0.6)", background: "rgba(239,68,68,0.15)", color: brand.text }}
-                          >
-                            <p className="font-medium">Subscription expired. Click here to activate payment API.</p>
-                          </button>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                  <div className="rounded-md p-6" style={{ background: brand.panel, border: `1px solid ${brand.faint}`, color: brand.text }}>
-                    <div className="mb-4 flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Latest Transactions</h3>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-transparent"
-                        style={{ borderColor: "rgba(246,196,49,0.4)", color: brand.yellow }}
-                        onClick={() => navigate("/portal/track-transactions")}
-                      >
-                        View all
-                      </Button>
-                    </div>
-                    <div className="space-y-3 text-sm">
-                      {stats?.recentTransactions.length === 0 ? (
-                        <p style={{ color: "rgba(255,255,255,0.45)" }}>No transactions yet</p>
-                      ) : (
-                        stats?.recentTransactions.map((transaction) => (
-                          <div key={transaction.transaction_id} className="flex justify-between rounded-md p-3" style={{ border: "1px solid rgba(255,255,255,0.08)", background: "rgba(0,0,0,0.15)" }}>
-                            <div>
-                              <p className="font-medium">{transaction.generated_code}</p>
-                              <p style={{ color: "rgba(255,255,255,0.45)" }}>
-                                {transaction.user_email} | {transaction.user_mobile}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold">{formatCurrency(Number(transaction.amount))}</p>
-                              <p className={getStatusColor(transaction.status)}>{String(transaction.status).toUpperCase()}</p>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex min-h-[325px] flex-col rounded-md p-6" style={{ background: brand.panel, border: "1px solid rgba(246,196,49,0.25)", color: brand.text }}>
-                    <div>
-                      <h3 className="text-lg font-semibold">Percentage of Total Generated Invoices - Paid</h3>
-                      <p className="mt-1 text-xs" style={{ color: brand.subtle }}>
-                        Paid value against all generated invoice value.
-                      </p>
-                    </div>
-                    <div className="flex flex-1 items-center justify-center py-6">
-                      <p className="leading-none font-extrabold tracking-tight" style={{ color: brand.yellow, fontSize: "clamp(7rem, 13vw, 13.5rem)" }}>
-                        {stats?.paidPercentage || 0}
-                        <span className="align-[0.08em] font-bold" style={{ fontSize: "0.48em" }}>%</span>
-                      </p>
-                    </div>
+                  <div className="rounded-md p-2" style={{ border: `1px solid ${brand.faint}`, background: "rgba(0,0,0,0.2)" }}>
+                    <Icon className="h-4 w-4" />
                   </div>
                 </div>
-                  </>
-                )}
+                <p className="text-3xl font-bold tracking-tight" style={{ color: brand.text }}>{card.value}</p>
               </div>
-            </div>
-          </main>
+            );
+          })}
         </div>
-      </div>
+
+        <div className="mb-8">
+          {(() => {
+            const now = new Date();
+            let startDate: Date;
+            let endDate: Date;
+            let planType: string;
+            let isExpired = false;
+            let progressPercentage = 0;
+
+            if (subscription && subscription.status === "active" && subscription.paycode_status === "paid") {
+              startDate = new Date(subscription.start_date);
+              endDate = new Date(subscription.end_date);
+              planType = subscription.plan_type;
+              isExpired = now > endDate;
+              const totalDuration = endDate.getTime() - startDate.getTime();
+              const elapsed = now.getTime() - startDate.getTime();
+              progressPercentage = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+            } else {
+              startDate = new Date(merchant?.created_at || Date.now());
+              endDate = new Date(startDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+              planType = "Trial";
+              isExpired = now > endDate;
+              const totalDuration = 3 * 24 * 60 * 60 * 1000;
+              const elapsed = now.getTime() - startDate.getTime();
+              progressPercentage = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+            }
+
+            return (
+              <>
+                <div className="relative rounded-md p-6" style={{ background: brand.panelSoft, border: `1px solid ${brand.faint}`, color: brand.text }}>
+                  <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em]" style={{ color: brand.yellow }}>Subscription</p>
+                      <h3 className="mt-1 text-lg font-semibold">API Subscription - {planType} Plan</h3>
+                    </div>
+                    <p className="text-sm" style={{ color: brand.muted }}>
+                      End Date:{" "}
+                      {endDate.toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <div className="h-3 w-full rounded-full" style={{ background: "rgba(0,0,0,0.35)" }}>
+                    <div
+                      className="h-3 rounded-full transition-all duration-500"
+                      style={{ width: `${progressPercentage}%`, background: progressPercentage >= 90 ? "#ef4444" : brand.yellow }}
+                    />
+                  </div>
+                </div>
+
+                {isExpired && (
+                  <button
+                    onClick={() => navigate("/portal/subscriptions")}
+                    className="mt-4 w-full cursor-pointer rounded-md p-4 text-left transition-colors"
+                    style={{ border: "1px solid rgba(248,113,113,0.6)", background: "rgba(239,68,68,0.15)", color: brand.text }}
+                  >
+                    <p className="font-medium">Subscription expired. Click here to activate payment API.</p>
+                  </button>
+                )}
+              </>
+            );
+          })()}
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <div className="rounded-md p-6" style={{ background: brand.panel, border: `1px solid ${brand.faint}`, color: brand.text }}>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Latest Transactions</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-transparent"
+                style={{ borderColor: "rgba(246,196,49,0.4)", color: brand.yellow }}
+                onClick={() => navigate("/portal/track-transactions")}
+              >
+                View all
+              </Button>
+            </div>
+            <div className="space-y-3 text-sm">
+              {stats?.recentTransactions.length === 0 ? (
+                <p style={{ color: "rgba(255,255,255,0.45)" }}>No transactions yet</p>
+              ) : (
+                stats?.recentTransactions.map((transaction) => (
+                  <div key={transaction.transaction_id} className="flex justify-between rounded-md p-3" style={{ border: "1px solid rgba(255,255,255,0.08)", background: "rgba(0,0,0,0.15)" }}>
+                    <div>
+                      <p className="font-medium">{transaction.generated_code}</p>
+                      <p style={{ color: "rgba(255,255,255,0.45)" }}>
+                        {transaction.user_email} | {transaction.user_mobile}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">{formatCurrency(Number(transaction.amount))}</p>
+                      <p className={getStatusColor(transaction.status)}>{String(transaction.status).toUpperCase()}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="flex min-h-[325px] flex-col rounded-md p-6" style={{ background: brand.panel, border: "1px solid rgba(246,196,49,0.25)", color: brand.text }}>
+            <div>
+              <h3 className="text-lg font-semibold">Percentage of Total Generated Invoices - Paid</h3>
+              <p className="mt-1 text-xs" style={{ color: brand.subtle }}>
+                Paid value against all generated invoice value.
+              </p>
+            </div>
+            <div className="flex flex-1 items-center justify-center py-6">
+              <p className="leading-none font-extrabold tracking-tight" style={{ color: brand.yellow, fontSize: "clamp(7rem, 13vw, 13.5rem)" }}>
+                {stats?.paidPercentage || 0}
+                <span className="align-[0.08em] font-bold" style={{ fontSize: "0.48em" }}>%</span>
+              </p>
+            </div>
+          </div>
+        </div>
+          </>
+        )}
+      </PortalShell>
     </ProtectedRoute>
   );
 };

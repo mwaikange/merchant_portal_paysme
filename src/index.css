@@ -27,47 +27,107 @@
   z-index: 1;
 }
 
-.content-scale-75-shell {
+.portal-frame {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-width: 0;
+  overflow: hidden;
+  background: #151815;
+  color: #fff;
+}
+
+.portal-header {
+  position: relative;
+  z-index: 30;
+  min-height: 61px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(246, 196, 49, 0.25);
+  background: #222922;
+}
+
+.portal-workspace {
+  display: grid;
+  grid-template-columns: 238px minmax(0, 1fr);
   min-height: 0;
-  overflow: visible;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.content-scale-75 {
-  transform: none;
-  transform-origin: top left;
-  width: 100%;
+.portal-sidebar {
+  display: flex;
+  flex-direction: column;
   min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  background: #1d231f;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.portal-frame > div > aside {
-  scrollbar-width: none;
+.portal-sidebar-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: 12px;
+  scrollbar-width: thin;
 }
 
-.portal-frame > div > aside::-webkit-scrollbar {
-  display: none;
+.portal-sidebar-footer {
+  flex-shrink: 0;
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: #1d231f;
+}
+
+.portal-frame-content {
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scroll-padding-block: 24px;
+  scrollbar-gutter: stable;
+  padding: 20px;
+}
+
+.portal-page {
+  display: flow-root;
+  min-width: 0;
+}
+
+.portal-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 8px 12px;
+  background: #f6c431;
+  color: #151815;
+  transform: translateY(-200%);
+}
+
+.portal-skip-link:focus {
+  transform: translateY(0);
 }
 
 @media (min-width: 1024px) {
-  .portal-frame-scale-90 {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-  }
-
-  body:has(.portal-frame-scale-90) {
-    zoom: 0.9;
-    /* Keep the scaled portal as tall as the visible viewport. */
-    height: calc(100% / 0.9);
+  .portal-frame-content {
+    padding: 32px;
   }
 }
 
-html:has(.portal-frame) {
+html:has(.portal-frame),
+body:has(.portal-frame),
+#root:has(.portal-frame) {
+  height: 100%;
   overflow: hidden;
 }
 
 body:has(.portal-frame) {
-  overflow: hidden;
   background: #151815;
 }
 
@@ -78,13 +138,13 @@ body,
   overflow-x: hidden;
 }
 
-.portal-frame .portal-frame-content > .min-h-screen > header,
-.portal-frame .portal-frame-content > .min-h-screen > main > header,
-.portal-frame .portal-frame-content > .min-h-screen > div > header {
+.portal-frame .portal-page > .min-h-screen > header,
+.portal-frame .portal-page > .min-h-screen > main > header,
+.portal-frame .portal-page > .min-h-screen > div > header {
   display: none !important;
 }
 
-.portal-frame .portal-frame-content > .min-h-screen {
+.portal-frame .portal-page > .min-h-screen {
   min-height: auto !important;
   background: transparent !important;
 }
