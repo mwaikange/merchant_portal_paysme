@@ -597,7 +597,7 @@ Each merchant uses the Lesaka API username and password issued to their own busi
 |---|---|---|
 | Lesaka API username | Yes | Authenticates your business's Lesaka account |
 | Lesaka API password | Yes | Authenticates the same Lesaka account |
-| Store ID | Only if Lesaka supplies it | Optional store metadata; it is not a replacement for either credential |
+| Store ID | No | Optional store metadata when supplied by Lesaka; not a replacement for either credential |
 
 Save both required fields together and enable **Show this button to customers**. Lesaka appears when the merchant's saved setup, payment-method visibility, subscription and account standing allow it. An old Kazang merchant code alone does not configure a Lesaka account.
 
