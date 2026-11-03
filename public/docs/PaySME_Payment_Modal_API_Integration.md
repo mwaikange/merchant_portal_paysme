@@ -740,13 +740,15 @@ Lesaka voucher errors return a readable `error` and, where available, a machine-
 |---|---|---|
 | 400 | `invalid_voucher_pin` | Enter the 16-digit voucher PIN |
 | 409 | `voucher_mismatch` | Voucher balance/currency must match the final payable NAD amount |
-| 409 | `voucher_not_active` | Voucher is not Active or is expired |
+| 409 | `voucher_not_active` | The displayed message identifies an already used, expired, cancelled or reversed voucher; use another voucher |
 | 502 | `lesaka_outcome_unknown` | Retry the same voucher on the same checkout |
 | 409 | `lesaka_account_changed` | Contact support before retrying with changed merchant credentials |
 | 409 | `lesaka_reconciliation_required` | Do not submit another voucher; ask support to reconcile the payment |
 | 503 | `lesaka_not_configured` | Merchant/platform configuration is unavailable; choose an available method |
 
-Provider-reported failures may return a `lesaka_<number>` code and a `traceId`. Use the displayed message and retain those identifiers for support; a failed or uncertain response is not proof of payment.
+The existing SDK and hosted checkout display the backend customer message. Known used, expired, cancelled and reversed states are identified before balance matching, so a zero balance is not presented as a checkout value error. Unsupported vouchers ask the customer to use a supported voucher; merchant/provider authorization problems ask them to choose another payment method or contact the merchant. An uncertain outcome instructs them to retry the same voucher on the same checkout. No SDK credential parameters or replacement SDK file are needed for these centrally served messages.
+
+Provider-reported failures may return a `lesaka_<number>` code and a `trace_id` (the provider calls it `traceId`). Use the displayed message and retain those identifiers for support; a failed or uncertain response is not proof of payment.
 
 Adumo card error codes (returned in `error_code`):
 

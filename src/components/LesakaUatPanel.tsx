@@ -13,6 +13,7 @@ type Execution = { id: string; cycle: number; case_id: string; fixture_id: strin
 type State = { enabled: boolean; credentials_current?: boolean; campaign: { id: string; title: string; created_at: string; inventory_sha256: string | null } | null; inventory: Fixture[]; executions: Execution[] };
 const empty: State = { enabled: false, campaign: null, inventory: [], executions: [] };
 const label = (value: string) => ({ pass: "Passed", fail: "Failed", review: "Needs review", blocked: "Blocked", uncertain: "Uncertain", error: "Error", running: "Running", pending: "Not run" }[value] || value);
+const guideCases = LESAKA_UAT_CASES.filter(item => /^TC-(STAT|RED|EDGE)-/.test(item.id));
 const colour = (value: string) => value === "pass" ? "text-emerald-300" : ["fail", "error"].includes(value) ? "text-red-300" : "text-yellow-200";
 const csvCell = (value: unknown) => { let s = typeof value === "string" ? value : JSON.stringify(value ?? ""); if (/^[=+@-]/.test(s)) s = "'" + s; return '"' + s.replaceAll('"', '""') + '"'; };
 function download(name: string, text: string, mime: string) {
@@ -58,7 +59,7 @@ export function LesakaUatPanel({ merchantId }: { merchantId: string }) {
   const fixture = state.inventory.find(item => item.id === fixtureId);
   const choices = state.inventory.filter(item => item.allocation === mode && (!test.amountMinor || item.value_minor === test.amountMinor));
   const replays = state.executions.filter(item => item.cycle === cycle && item.fixture_id === fixtureId && item.case_id !== "TC-EDGE-01" && item.evidence.some(call => call.operation === "redeem" && call.http_status === 200 && call.response.remainingAmount === 0));
-  const summary = [1, 2, 3].map(number => ({ cycle: number, passed: LESAKA_UAT_CASES.filter(item => latest.get(`${number}:${item.id}`)?.verdict === "pass").length, recorded: LESAKA_UAT_CASES.filter(item => latest.has(`${number}:${item.id}`)).length }));
+  const summary = [1, 2, 3].map(number => ({ cycle: number, guide_passed: guideCases.filter(item => latest.get(`${number}:${item.id}`)?.verdict === "pass").length, guide_recorded: guideCases.filter(item => latest.has(`${number}:${item.id}`)).length, passed: LESAKA_UAT_CASES.filter(item => latest.get(`${number}:${item.id}`)?.verdict === "pass").length, recorded: LESAKA_UAT_CASES.filter(item => latest.has(`${number}:${item.id}`)).length }));
   const work = async (operation: () => Promise<void>) => { setBusy(true); setError(""); try { await operation(); } catch (e) { setError(e instanceof Error ? e.message : "The test request failed."); } finally { setBusy(false); } };
   const run = (resume?: Execution) => work(async () => {
     const id = resume?.id || crypto.randomUUID();
@@ -68,7 +69,7 @@ export function LesakaUatPanel({ merchantId }: { merchantId: string }) {
   });
   const exportReport = (format: "json" | "csv") => {
     const checks = [1, 2, 3].flatMap(number => LESAKA_UAT_CASES.map(item => ({ cycle: number, case_id: item.id, title: item.title, expected: item.expected, latest_verdict: latest.get(`${number}:${item.id}`)?.verdict || "pending" })));
-    const report = { environment: "staging", exported_at: new Date().toISOString(), campaign: state.campaign, cycles: summary, all_three_cycles_passed: summary.every(s => s.passed === LESAKA_UAT_CASES.length), cases: LESAKA_UAT_CASES, checklist: checks, inventory: state.inventory, executions: state.executions };
+    const report = { environment: "staging", exported_at: new Date().toISOString(), campaign: state.campaign, cycles: summary, all_three_guide_cycles_passed: summary.every(s => s.guide_passed === guideCases.length), all_three_cycles_passed: summary.every(s => s.passed === LESAKA_UAT_CASES.length), cases: LESAKA_UAT_CASES, checklist: checks, inventory: state.inventory, executions: state.executions };
     const filename = `Lesaka-UAT-${state.campaign?.id || "checklist"}`;
     if (format === "json") return download(filename + ".json", JSON.stringify(report, null, 2), "application/json");
     const header = ["Cycle", "Case", "Title", "Expected", "Verdict", "Execution ID", "Started UTC", "Finished UTC", "Client reference", "Actor", "Voucher", "Reason", "Request/response evidence", "Manual observations"];
@@ -98,8 +99,8 @@ export function LesakaUatPanel({ merchantId }: { merchantId: string }) {
         }} />
         <p className="text-xs text-white/70">The first half of each value is allocated to automation. The remaining half is reserved for your manual tests; its PINs are not stored.</p>
       </div>}
-      <div className="grid grid-cols-3 gap-2" aria-label="Test cycles">{summary.map(s => <button key={s.cycle} type="button" aria-pressed={cycle === s.cycle} data-state={cycle === s.cycle ? "active" : "inactive"} disabled={busy} onClick={() => { setCycle(s.cycle); setPin(""); setConfirmed(false); }} className={`rounded-md border p-3 text-left ${cycle === s.cycle ? "border-yellow-400 bg-yellow-400/10" : "border-white/15"}`}><strong>Cycle {s.cycle}</strong><span className="mt-1 block text-xs">{s.passed}/{LESAKA_UAT_CASES.length} passed · {s.recorded} recorded</span></button>)}</div>
-      <p className="text-xs text-white/65">A cycle is complete only when every case passes. Failed, uncertain, blocked and review results remain visible; notes do not turn them into passes.</p>
+      <div className="grid grid-cols-3 gap-2" aria-label="Test cycles">{summary.map(s => <button key={s.cycle} type="button" aria-pressed={cycle === s.cycle} data-state={cycle === s.cycle ? "active" : "inactive"} disabled={busy} onClick={() => { setCycle(s.cycle); setPin(""); setConfirmed(false); }} className={`rounded-md border p-3 text-left ${cycle === s.cycle ? "border-yellow-400 bg-yellow-400/10" : "border-white/15"}`}><strong>Cycle {s.cycle}</strong><span className="mt-1 block text-xs">Guide: {s.guide_passed}/{guideCases.length} passed · {s.guide_recorded} recorded</span></button>)}</div>
+      <p className="text-xs text-white/65">Each guide cycle contains 12 mandatory cases. The 18 supplied workbook checks remain in the checklist and exports too. Failed, uncertain, blocked and review results do not count as passes; supplier sign-off is still required.</p>
       <div className="grid gap-4 xl:grid-cols-2">
         <div className="space-y-3 rounded-md border border-white/15 p-3">
           <div><Label htmlFor="lesaka-uat-case">Test case</Label><select id="lesaka-uat-case" className="mt-1 h-10 w-full rounded-md border px-2 text-sm" value={caseId} disabled={busy} onChange={e => { setCaseId(e.target.value); setPin(""); setConfirmed(false); setReplayOf(""); }}>{LESAKA_UAT_CASES.map(item => <option key={item.id} value={item.id}>{item.id} · {item.title}</option>)}</select></div>

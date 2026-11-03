@@ -306,3 +306,20 @@ test("credentials changed during an uncertain attempt never retry against a diff
 });
 
 test.after(() => { globalThis.fetch = originalFetch; delete globalThis.Deno; delete globalThis.__lesakaDb; });
+
+test('customer messages distinguish used, expired, cancelled and reversed vouchers even with zero balance', async () => {
+  for (const [status, text] of [['Consumed','already been used'],['Expired','has expired'],['Cancelled','been cancelled'],['Reversed','been reversed']]) {
+    setup(); mockGateway(); const transport=globalThis.fetch;
+    globalThis.fetch=async(url,init)=>url.endsWith('/status')?Response.json(response(JSON.parse(init.body).clientReference,false,{status,remainingAmount:0})):transport(url,init);
+    const result=await checkout();
+    assert.equal(result.status,409);assert.equal(result.body.code,'voucher_not_active');assert.ok(result.body.error.includes(text));
+    assert.equal(database.transactions[0].status,'pending');assert.equal(database.lesaka_voucher_attempts.length,0);
+  }
+});
+
+test('gateway preserves staging ProblemDetails business codes and gives customers safe configuration errors', async () => {
+  const config=lesakaConfig(name=>credentials[name],merchantCredentials);
+  await assert.rejects(lesakaRequest(config,'redeem',{pin,clientReference:reference,requestTime:'now'},async()=>Response.json({status:5008,traceId:'trace-staging',detail:pin},{status:502})),error=>error.code==='lesaka_5008'&&error.traceId==='trace-staging'&&!error.message.includes(pin));
+  await assert.rejects(lesakaRequest(config,'status',{pin,clientReference:reference,requestTime:'now'},async()=>Response.json({status:401},{status:401})),error=>error.message.includes('choose another payment method')&&!error.message.includes('password'));
+  await assert.rejects(lesakaRequest(config,'status',{pin,clientReference:reference,requestTime:'now'},async()=>Response.json({errorCode:5006},{status:409})),error=>error.message.includes('not a supported Lesaka'));
+});

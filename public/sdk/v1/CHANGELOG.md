@@ -2,6 +2,8 @@
 
 ## v1.12.0 - 2026-10-20
 
+- 3 November 2026 backend wording: distinguish used, expired, cancelled and reversed vouchers before balance checks; retain staging ProblemDetails business codes and safe customer guidance. Existing SDK v1.12.0 displays the server messages; its JavaScript remains unchanged.
+
 - 3 November 2026 documentation update: added the private Lesaka three-cycle UAT recorder workflow, evidence exports, reserved manual vouchers and supplier review requirements. Public SDK code, version and methods are unchanged.
 
 - Renamed customer-facing Kazang payment options to Lesaka across SDK and hosted checkout.

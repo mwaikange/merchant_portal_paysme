@@ -86,6 +86,15 @@ type VoucherResponse = {
 
 export function verifyVoucher(data: unknown, reference: string, minor: number, redeemed = false): VoucherResponse {
   const voucher = data as VoucherResponse | null;
+  // Explain known lifecycle states before checking balance: Consumed vouchers
+  // correctly have zero remaining balance, which is not a checkout value error.
+  if (!redeemed && voucher && voucher.clientReference === reference) {
+    const message = voucher.status === "Consumed" ? "This voucher has already been used. Please use another voucher."
+      : voucher.status === "Cancelled" ? "This voucher has been cancelled. Please use another voucher."
+      : voucher.status === "Reversed" ? "This voucher has been reversed and cannot be used. Please use another voucher."
+      : voucher.status === "Expired" ? "This voucher has expired. Please use another voucher." : null;
+    if (message) throw new LesakaError(message, 409, "voucher_not_active");
+  }
   if (!voucher || typeof voucher.id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(voucher.id) || voucher.clientReference !== reference ||
       voucher.totalAmount?.currency !== LESAKA_CURRENCY || voucher.totalAmount?.minor !== minor ||
       !Number.isSafeInteger(voucher.remainingAmount) || voucher.remainingAmount !== (redeemed ? 0 : minor)) {
@@ -123,13 +132,19 @@ export async function lesakaRequest(
     throw new LesakaError("Voucher verification is incomplete. Retry using the same voucher for this checkout.", 502, "lesaka_outcome_unknown");
   }
   if (response.status !== 200) {
-    const code = Number(data?.errorCode);
+    // The staging gateway also returns business codes in ProblemDetails.status.
+    // An ordinary HTTP status (for example 400) is not a Lesaka business code.
+    const code = Number(data?.errorCode ?? (Number(data?.status) >= 5000 && Number(data?.status) < 6000 ? data.status : undefined));
     const message = code === 5001 || response.status === 404
       ? "This voucher is unavailable, already used, cancelled or expired."
       : code === 5003
         ? "This voucher request needs support review. Do not use a different voucher for this checkout."
         : code === 5007
           ? "This voucher is being processed. Wait, then retry the same voucher."
+          : code === 5006
+            ? "This voucher is not a supported Lesaka 4All voucher. Please use another voucher."
+          : response.status === 401 || response.status === 403 && !Number.isFinite(code)
+            ? "Lesaka voucher payments are temporarily unavailable. Please choose another payment method or contact the merchant."
           : code === 5005
             ? "The voucher request was rejected. Please contact support."
             : "Voucher verification is unavailable. Retry the same voucher or contact support.";

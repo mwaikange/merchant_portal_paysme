@@ -14,7 +14,7 @@ This private recorder is available only to the approved PaySME merchant account 
 6. Read the recorded verdict and evidence. Add an observation if needed. Notes preserve your observations and do not change the automated verdict.
 7. Download **results CSV** to view in Excel and **full evidence JSON** for detailed request/response records. Export after each cycle and retain the final report for Lesaka.
 
-There are 30 checklist entries per cycle: 18 cases from the supplied workbook and 12 from Lesaka's published UAT page. Overlapping cases retain their separate supplier IDs. Earlier attempts remain in the export. Each cycle is complete only when every required entry passes; all three cycles must pass before submitting for supplier sign-off. The recorder does not grant production approval.
+There are 30 checklist entries per cycle: 18 cases from the supplied workbook and 12 from Lesaka's published UAT page. Overlapping cases retain their separate supplier IDs. Earlier attempts remain in the export. The cycle tabs show the 12 mandatory guide cases; all 18 workbook checks remain in the checklist and exports. Guide completion is reported separately from full checklist completion. All supplier-required entries and three successful cycles are required for sign-off. PaySME automation runs Cycle 1; the operator runs Cycles 2 and 3. The recorder does not grant production approval.
 
 ## Voucher allocation
 
