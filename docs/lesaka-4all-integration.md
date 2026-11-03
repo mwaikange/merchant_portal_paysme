@@ -1,6 +1,6 @@
 # Lesaka 4All merchant integration
 
-Prepared 20 October 2026 against Lesaka API **v2.1.0**, read in the Codex browser:
+Updated 3 November 2026 against Lesaka API **v2.1.0** and the supplied workbook and voucher inventory:
 
 - [OpenAPI specification](https://lesaka-adp-4allvoucher.apidocumentation.com/lesaka-4-all-voucher-api)
 - [Integration guide](https://lesaka-adp-4allvoucher.apidocumentation.com/guide/integration-guide)
@@ -9,13 +9,13 @@ Prepared 20 October 2026 against Lesaka API **v2.1.0**, read in the Codex browse
 
 ## Current readiness
 
-Code is prepared locally. Staging credentials, test vouchers, production credentials and UAT sign-off have **not** been received. No provider transactions have been executed and this change has not been deployed. Live checkout remains unavailable by default.
+The merchant credential and payment integration is deployed. Staging credentials and the supplier test pack have now been received. The private three-cycle UAT recorder below captures actual execution results; production credentials and supplier sign-off remain outstanding. Live checkout remains unavailable until the production gates are met.
 
 The provider currency is **NAD**, as clarified by the project owner. Customer amounts display as N$ and the SDK continues using `amount_nad`. No currency field is invented in the request: Lesaka's request schemas do not contain one. Currency is verified in `totalAmount.currency` in both responses.
 
 ## Server configuration
 
-Apply `20261020120000_lesaka_4all_attempts.sql` and `20261020130000_lesaka_merchant_credentials.sql`, then deploy `lesaka-credentials`, `mobiwand-payment`, and `checkout-eligibility` together with the shared modules and updated SDK/portal. Both new migrations are local and have not been applied by this task. `transactions.transaction_id` is varchar, so the attempts migration uses the matching type.
+Apply `20261020120000_lesaka_4all_attempts.sql` and `20261020130000_lesaka_merchant_credentials.sql`, then deploy `lesaka-credentials`, `mobiwand-payment`, and `checkout-eligibility` together with the shared modules and updated SDK/portal. The original credential and attempts migrations have been applied. The private recorder adds its own migration and Edge Function. `transactions.transaction_id` is varchar, so the attempts migration uses the matching type.
 
 Merchants enter their **own live API username and password** under **API > Facilitator Merchant Codes > Lesaka**. Both fields are required. Store ID is optional and is used only as Lesaka metadata. Existing Kazang merchant codes are not credentials and do not enable payments. The existing facilitator visibility switch remains shared by SDK and hosted checkout.
 
@@ -64,7 +64,7 @@ On a timeout or uncertain provider result, keep the original reference. The cust
 
 The SDK emits `paysme:payment-success` / `on_payment_success` only for verified `paid` results. `on_success` retains its existing code-generation meaning. Old MobiWand initiation and callbacks are rejected for Kazang.
 
-## Testing when credentials arrive
+## Checkout integration checks
 
 Run local mocked checks with `node --test tests/lesaka-payment.test.mjs tests/lesaka-credentials.test.mjs`. These tests make no external requests. They cover encrypted storage, permission enforcement, no credential read-back, two-merchant isolation, SDK/hosted routing, retries and payment verification. They do not substitute for Lesaka UAT.
 
@@ -73,3 +73,9 @@ Use a dedicated PaySME integration test merchant and pending test checkout. Prov
 Request Active, Consumed, Expired and Cancelled test vouchers and serial numbers from Lesaka. Execute all published TC-STAT, TC-RED and TC-EDGE cases using a secure server test runner. In particular verify status by PIN and serial, missing references, malformed PINs, exact/insufficient/excess voucher balances, currency mismatch, invalid credentials, provider errors, timeouts, duplicate references and simultaneous requests. The shared `lesakaRequest` helper supports status by serial for UAT; customer redemption still requires a PIN. Capture references and trace IDs, never PINs or credentials, for sign-off.
 
 After Lesaka approves the shared integration UAT, select production and set the global UAT approval flag. Each merchant saves their own live credentials; an enabled merchant with both credentials can then use the common payment flow without repeating platform UAT. Production never falls back to staging credentials. Unknown or conflicting outcomes require provider reconciliation; the public documentation exposes no transaction-status-by-reference endpoint for background reconciliation without re-entering the PIN.
+
+## Private UAT recorder — 3 November 2026
+
+The approved PaySME account now uses its saved encrypted staging credentials with the separate `lesaka-uat` function. The function and private tables capture 30 workbook/website cases across three cycles, source-file-bound half allocations, redacted evidence, manual observations, original-reference retries and CSV/JSON exports. No customer SDK code or payment settlement behavior is changed. The function is allowlisted to PaySME and refuses production.
+
+See [the operator workflow](../public/docs/PaySME_Lesaka_UAT_Workflow.md) for usage, fixture prerequisites and unresolved supplier assertions. Local mock checks verify the safety controls; actual provider execution results live in the recorder and must not be inferred from mock tests. Test credentials have been saved, but production approval still requires Lesaka sign-off after all required tests pass.

@@ -62,6 +62,10 @@ verify_jwt = false
 [functions.lesaka-credentials]
 verify_jwt = false
 
+# Private staging recorder validates the user and merchant API permission itself.
+[functions.lesaka-uat]
+verify_jwt = false
+
 [functions.wayame-payment]
 verify_jwt = false
 

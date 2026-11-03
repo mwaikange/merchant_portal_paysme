@@ -103,6 +103,7 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save Lesaka credentials
         </Button>
       </div>
+      {settings?.environment === "staging" && settings.configured && <a href="#lesaka-test-recorder" className="mt-4 inline-block text-sm font-semibold text-yellow-300 underline">Open the three-cycle test recorder</a>}
     </div>
   );
 }

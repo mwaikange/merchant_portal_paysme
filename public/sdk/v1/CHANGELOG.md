@@ -2,6 +2,8 @@
 
 ## v1.12.0 - 2026-10-20
 
+- 3 November 2026 documentation update: added the private Lesaka three-cycle UAT recorder workflow, evidence exports, reserved manual vouchers and supplier review requirements. Public SDK code, version and methods are unchanged.
+
 - Renamed customer-facing Kazang payment options to Lesaka across SDK and hosted checkout.
 - Uses each merchant's own Lesaka username/password, entered in the merchant portal and encrypted before database storage.
 - Requires both credentials; Store ID is optional. The SDK never receives provider credentials.

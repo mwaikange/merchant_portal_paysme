@@ -1,6 +1,6 @@
 # PaySME Payment Modal — API Integration Guide
 
-**Version:** 1.12.0 · **Updated:** 21 October 2026
+**Version:** 1.12.0 · **Updated:** 3 November 2026
 **Audience:** Merchants integrating PaySME payments on web, mobile, or server-side.
 
 ---
@@ -18,6 +18,8 @@ The PaySME Payment Modal is a hosted/embeddable checkout that lets your customer
 7. **Lesaka 4All vouchers** — customers redeem a 16-digit voucher PIN using the Lesaka account configured for your business.
 
 Payment options are determined by your merchant configuration and checkout eligibility. Enable Lesaka under **Merchant Portal > API & integration > Facilitator Merchant Codes > Lesaka**; see section 5.6.
+
+Approved PaySME operators can record the required supplier tests in the private Lesaka three-cycle UAT workflow: <https://merchant.paysme.site/docs/PaySME_Lesaka_UAT_Workflow.md>. This recorder is separate from customer checkout and does not change SDK methods or payment-success behavior.
 
 There are **two ways** to use it:
 

@@ -25,6 +25,7 @@ import {
 } from "@/lib/merchantQrLinks";
 import { QrEmailDialog } from "@/components/QrEmailDialog";
 import { LesakaCredentialsForm } from "@/components/LesakaCredentialsForm";
+import { LesakaUatPanel } from "@/components/LesakaUatPanel";
 
 // Form validation schema
 const productFormSchema = z.object({
@@ -1252,18 +1253,18 @@ const ApiIntegration = () => {
                     <CardTitle>API Documentation · SDK v1.12.0</CardTitle>
                   </div>
                   <CardDescription>
-                    Updated 21 October 2026. SDK methods, Lesaka merchant setup and voucher payments, REST endpoints, webhooks and error handling.
+                    Updated 3 November 2026. SDK methods, Lesaka setup and voucher payments, private test recording, REST endpoints, webhooks and error handling.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <Button asChild className="w-full" variant="default">
-                    <a href="/docs/PaySME_Payment_Modal_API_Integration.md?v=1.12.0" target="_blank" rel="noopener noreferrer">
+                    <a href="/docs/PaySME_Payment_Modal_API_Integration.md?v=1.12.0-20261103" target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4 mr-2" />
                       View Documentation
                     </a>
                   </Button>
                   <Button asChild className="w-full" variant="outline">
-                    <a href="/docs/PaySME_Payment_Modal_API_Integration.pdf?v=1.12.0" download>
+                    <a href="/docs/PaySME_Payment_Modal_API_Integration.pdf?v=1.12.0-20261103" download>
                       <Download className="h-4 w-4 mr-2" />
                       Download PDF
                     </a>
@@ -1275,6 +1276,7 @@ const ApiIntegration = () => {
               </Card>
             </div>
           </div>
+          {merchant && <LesakaUatPanel merchantId={merchant.merchant_id} />}
         </div>
       </div>
     </ProtectedRoute>;

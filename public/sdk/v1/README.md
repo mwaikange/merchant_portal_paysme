@@ -316,3 +316,5 @@ The SDK is versioned at `/sdk/v1/paysme.js`. Use the stable URL `https://www.pay
 
 - Website: [paysme.site](https://paysme.site)
 - Email: support@paysme.site
+
+Private PaySME operator testing: see the [Lesaka three-cycle UAT workflow](https://merchant.paysme.site/docs/PaySME_Lesaka_UAT_Workflow.md). The recorder captures redacted evidence and preserves at least half of each voucher value for manual tests. SDK v1.12.0 and its public methods remain unchanged.
