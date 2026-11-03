@@ -4,6 +4,7 @@ import { pinFingerprint } from "../_shared/lesaka-4all.ts";
 import { parseUatInventory, scrubUat } from "../_shared/lesaka-uat.ts";
 import { encryptUatPin, uatState, UatError, uuid, type Campaign } from "../_shared/lesaka-uat-store.ts";
 import { runUat } from "../_shared/lesaka-uat-runner.ts";
+import { inspectUatSerial } from "../_shared/lesaka-uat-inspect.ts";
 const env = (key: string) => Deno.env.get(key) || "";
 const admin = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"));
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
@@ -55,6 +56,20 @@ Deno.serve(async req => {
     if (body.action === "status" || body.action === "create") return json({ ok: true, enabled: true, credentials_current: !campaign || campaign.credential_version === setup.data.credential_version, ...(await uatState(admin, campaign)) });
     if (!campaign) throw new UatError("Create the three-cycle campaign first.", 409);
     if (campaign.credential_version !== setup.data.credential_version) throw new UatError("Credentials changed. Create a new campaign before continuing.", 409);
+    if (body.action === "inspect") {
+      // Discovery is read-only, including the reserved half. Redemption keeps
+      // its existing allocation restrictions in runUat.
+      if (!uuid(body.fixture_id)) throw new UatError("Choose an allocated voucher.");
+      const fixture = await admin.from("lesaka_uat_inventory").select("id,serial_number,value_minor").eq("id", body.fixture_id).eq("campaign_id", campaign.id).maybeSingle();
+      if (fixture.error || !fixture.data) throw new UatError("Allocated voucher not found.", 404);
+      const credentials = await decryptLesakaCredentials(setup.data.encrypted_credentials, merchantId, "staging", env);
+      const inspection = await inspectUatSerial(fixture.data, credentials, setup.data.store_id);
+      if (inspection.valid) {
+        const updated = await admin.from("lesaka_uat_inventory").update({ observed_state: inspection.observed_state }).eq("id", fixture.data.id).eq("campaign_id", campaign.id);
+        if (updated.error) throw new UatError("Status was checked but could not be saved. Retry this read-only enquiry.", 503);
+      }
+      return json({ ok: true, inspection });
+    }
     if (body.action === "import") {
       if (campaign.inventory_sha256) throw new UatError("Voucher allocation already exists for this campaign.", 409);
       if (typeof body.file_base64 !== "string" || body.file_base64.length > 150000) throw new UatError("Choose the supplied voucher text file.");

@@ -59,3 +59,7 @@ The private Edge Function authenticates the signed-in user and checks merchant A
 - [Reporting](https://lesaka-adp-4allvoucher.apidocumentation.com/guide/reporting)
 
 Lesaka's email requires a minimum of **three successful test cycles**, executed in staging. Submit cycle number, case/execution reference, date and time, and request/response evidence. Daily provider reconciliation reports use major currency units, while API `minor` amounts use cents. The recorder's evidence is a UAT record and does not replace the supplier's settlement report.
+
+## Read-only inventory discovery
+
+An authorized operator can use the private recorder's `inspect` action to query a stored voucher by its 12-digit serial number, including vouchers reserved for manual testing. This action is fixed to the staging **status** endpoint, accepts only an inventory fixture ID, never submits a PIN and cannot call redemption. Validated states update the inventory labels used by the recorder; discovery evidence is retained in the operator's exported status scan. It does not count as a mandatory UAT case execution. Automated **redemption** remains restricted to the original first-half allocation.

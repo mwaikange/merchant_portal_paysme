@@ -320,3 +320,5 @@ The SDK is versioned at `/sdk/v1/paysme.js`. Use the stable URL `https://www.pay
 Private PaySME operator testing: see the [Lesaka three-cycle UAT workflow](https://merchant.paysme.site/docs/PaySME_Lesaka_UAT_Workflow.md). The recorder captures redacted evidence and preserves at least half of each voucher value for manual tests. SDK v1.12.0 and its public methods remain unchanged.
 
 Customer outcome wording is served centrally: used, expired, cancelled and reversed voucher states have distinct messages even when their remaining balance is zero. Unsupported vouchers and merchant authorization failures have actionable messages. The existing SDK v1.12.0 and hosted checkout display these server messages without a replacement SDK download. Staging gateway ProblemDetails business codes in `status` are preserved for support; validation HTTP 400 is never relabelled as business code 5005 without supplier evidence.
+
+Operator voucher discovery can inspect serial status across the approved inventory without sending PINs or redeeming vouchers. This private test action does not change SDK v1.12.0 or authorize automated redemption of reserved manual vouchers.
