@@ -610,6 +610,8 @@ Continue using the **PaySME Merchant ID UUID** as `vendor_uuid` and your **PaySM
 
 #### SDK and hosted checkout
 
+Hosted `/pay/` links and existing-code `/c/` links share the black secure-checkout design on desktop and mobile. Selecting a provider hides the underlying payment buttons so they cannot appear beneath its form.
+
 There is no separate Lesaka SDK method or additional credential parameter. `PaySME.init(config)`, `PaySME.create(config)` and `PaySME.pending(config)` offer **Pay via Lesaka** when it is available. Hosted payment links use the same saved merchant setup. In Request-to-Pay mode, the customer can select Lesaka on the hosted page opened from the SMS link.
 
 1. The customer selects **Pay via Lesaka** and uses a Lesaka 4All voucher from a participating Kazang retailer.
@@ -619,6 +621,8 @@ There is no separate Lesaka SDK method or additional credential parameter. `PayS
 5. Only verified redemption and matching PaySME settlement produce **Payment confirmed**, `status: "paid"`, the normal payment-success signal and merchant payment notifications.
 
 Opening the modal, entering a PIN or receiving a PaySME Code does not prove payment. Keep the existing `on_success` code-generation behavior; use the verified-payment callback/event for the customer interface and the signed `payment.paid` webhook for unattended fulfilment.
+
+After a successful redemption, retrying the same voucher on the same checkout returns the original result with `replayed: true` and displays **Already completed**. It does not redeem again. A different voucher on that completed checkout requires a new checkout; this is distinct from an unused checkout rejecting a wrong value, consumed, expired or cancelled voucher. The test recorder retains rejections and repeated requests, and repeated completed results do not create new passed cases. For malformed-PIN supplier tests use **Test too-short PIN (15 digits)** or **Test too-long PIN (17 digits)** in the recorder. These send controlled invalid requests and record the responses while ordinary checkout continues to require exactly 16 digits.
 
 #### Checkout request and compatible identifiers
 

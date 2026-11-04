@@ -808,11 +808,15 @@
         }).then(function (data) {
           busy = false;
           pin.value = "";
+          if (data.replayed) {
+            showMessage("Already completed", "This checkout was completed earlier. No voucher was redeemed again. Use a new checkout to test another voucher.");
+            if (data.status === "tested") return;
+          }
           if (data.status === "tested") {
             showMessage("Test voucher redeemed", "Staging test complete. No real payment was marked paid.");
             return;
           }
-          showMessage("Payment confirmed", "Lesaka confirmed this voucher payment.");
+          if (!data.replayed) showMessage("Payment confirmed", "Lesaka confirmed this voucher payment.");
           var result = Object.assign({ payment_method: "kazang" }, data);
           window.dispatchEvent(new CustomEvent("paysme:payment-success", { detail: result }));
           if (typeof cfg.on_payment_success === "function") cfg.on_payment_success(result);

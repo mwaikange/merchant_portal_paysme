@@ -98,6 +98,7 @@ export function PaycodeModal({
   const [mobiWandError, setMobiWandError] = useState<string | null>(null);
   const [mobiWandStep, setMobiWandStep] = useState<"warning" | "code" | "waiting" | "passed" | "paid" | "tested">("warning");
   const [mobiWandCode, setMobiWandCode] = useState("");
+  const [lesakaReplayed, setLesakaReplayed] = useState(false);
   const [mobiWandSeconds, setMobiWandSeconds] = useState(180);
   const [mobiWandApprovalSeconds, setMobiWandApprovalSeconds] = useState(7);
   const [wayameOpen, setWayameOpen] = useState(false);
@@ -111,6 +112,7 @@ export function PaycodeModal({
   useEffect(() => {
     checkoutVersion.current += 1;
     setMobiWandProvider(null);
+    setLesakaReplayed(false);
     setMobiWandStep("warning");
     setMobiWandCode("");
     setMobiWandError(null);
@@ -374,6 +376,7 @@ export function PaycodeModal({
           throw new Error(response?.error || "Voucher verification is incomplete. Retry the same voucher for this checkout.");
         }
         if (!data?.ok || !["paid", "tested"].includes(data.status)) throw new Error(data?.error || "The voucher payment was not confirmed.");
+        setLesakaReplayed(data.replayed === true);
         setMobiWandCode("");
         setMobiWandStep(data.status);
         if (data.status === "paid") {
@@ -401,6 +404,7 @@ export function PaycodeModal({
   };
 
   const openMobiWand = (provider: MobiWandProvider) => {
+    setLesakaReplayed(false);
     setMobiWandProvider(provider);
     setMobiWandStep("warning");
     setMobiWandCode("");
@@ -472,7 +476,7 @@ export function PaycodeModal({
     : mobileBrandedPage
       ? "relative max-h-[calc(100dvh-8.75rem)] w-full max-w-sm overflow-x-hidden overflow-y-auto rounded-lg bg-gray-700 p-4 shadow-2xl [scrollbar-width:none] md:mx-4 md:max-h-[calc(100dvh-2rem)] md:w-80 [&::-webkit-scrollbar]:hidden"
       : "relative mx-4 max-h-[calc(100dvh-2rem)] w-80 max-w-sm overflow-x-hidden overflow-y-auto rounded-lg bg-gray-700 p-4 shadow-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
-  const showHostedProviderStep = mobileBrandedPage && Boolean(mobiWandProvider || wayameOpen);
+  const showHostedProviderStep = Boolean(mobiWandProvider || wayameOpen);
 
   const modal = (
     <div className={overlayClassName} role="dialog" aria-modal="true" aria-label="Pay with PaySME">
@@ -491,7 +495,7 @@ export function PaycodeModal({
         </div>
       )}
       <div className={modalClassName}>
-        <div className={showHostedProviderStep ? "hidden md:contents" : "contents"}>
+        <div className={showHostedProviderStep ? "hidden" : "contents"}>
         <div className="mb-4 text-center">
           <button onClick={onClose} className="absolute right-2 top-2 text-white hover:text-gray-300">
             <X className="h-4 w-4" />
@@ -692,9 +696,7 @@ export function PaycodeModal({
         </div>
 
         {mobiWandProvider && (
-          <div className={mobileBrandedPage
-            ? "relative z-10 flex min-h-full w-full flex-col justify-center overflow-y-auto rounded-lg bg-gray-700 p-2 text-center sm:p-4 md:absolute md:inset-0 md:min-h-0 md:w-auto md:p-6"
-            : "absolute inset-0 z-10 flex flex-col justify-center overflow-y-auto rounded-lg bg-gray-700 p-6 text-center"}>
+          <div className="relative z-10 flex w-full flex-col justify-center rounded-lg bg-gray-700 p-2 text-center sm:p-4">
             <button
               type="button"
               onClick={closeMobiWand}
@@ -713,8 +715,8 @@ export function PaycodeModal({
             {mobiWandStep === "paid" || mobiWandStep === "tested" ? (
               <div className="py-5 text-center">
                 <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-[#B3D31B]" />
-                <h4 className="text-lg font-bold text-white">{mobiWandStep === "paid" ? "Payment confirmed" : "Test voucher redeemed"}</h4>
-                <p className="mt-2 text-sm text-gray-200">{mobiWandStep === "paid" ? "Lesaka confirmed this voucher payment." : "Staging test complete. No real payment was marked paid."}</p>
+                <h4 className="text-lg font-bold text-white">{lesakaReplayed ? "Already completed" : mobiWandStep === "paid" ? "Payment confirmed" : "Test voucher redeemed"}</h4>
+                <p className="mt-2 text-sm text-gray-200">{lesakaReplayed ? "This checkout was completed earlier. No voucher was redeemed again. Use a new checkout to test another voucher." : mobiWandStep === "paid" ? "Lesaka confirmed this voucher payment." : "Staging test complete. No real payment was marked paid."}</p>
                 <Button onClick={mobiWandStep === "paid" ? onClose : closeMobiWand} className="mt-5 w-full">Close</Button>
               </div>
             ) : mobiWandStep === "passed" ? (
@@ -825,7 +827,7 @@ export function PaycodeModal({
         )}
 
         {wayameOpen && (
-          <div className={`${mobileBrandedPage ? "relative z-10 flex min-h-full w-full flex-col overflow-y-auto rounded-lg bg-gray-700 p-2 text-center sm:p-4 md:absolute md:inset-0 md:min-h-0 md:w-auto md:p-5" : "absolute inset-0 z-10 flex flex-col overflow-y-auto rounded-lg bg-gray-700 p-5 text-center"} ${wayameSimulationStep === "passed" ? "justify-center" : "justify-start"}`}>
+          <div className={`relative z-10 flex w-full flex-col rounded-lg bg-gray-700 p-2 text-center sm:p-4 ${wayameSimulationStep === "passed" ? "justify-center" : "justify-start"}`}>
             <button type="button" onClick={closeWayame} className="absolute right-3 top-3 text-white hover:text-gray-300" aria-label="Close WayaMe payment">
               <X className="h-4 w-4" />
             </button>

@@ -51,6 +51,6 @@ export async function beginCustomerCapture(admin:SupabaseClient, session:{id:str
 export type CustomerCapture=Awaited<ReturnType<typeof beginCustomerCapture>>;
 export async function recordCustomerResponse(capture:CustomerCapture|null,operation:()=>Promise<Response>){
  if(!capture)return await operation();
- try{const response=await operation();const data=await response.clone().json().catch(()=>({}));await capture.finish(data.status==="tested"?"tested":response.status>=500?(capture.hasRedemption()?"uncertain":"error"):"rejected",data.error||"Test voucher payment verified. No live payment was settled.");return response;}
+ try{const response=await operation();const data=await response.clone().json().catch(()=>({}));await capture.finish(data.replayed?"resolved":data.status==="tested"?"tested":response.status>=500?(capture.hasRedemption()?"uncertain":"error"):"rejected",data.error||(data.replayed?"This checkout completed earlier. Original result returned; no new voucher redemption or test pass.":"Test voucher payment verified. No live payment was settled."));return response;}
  catch(error){const known=error instanceof LesakaError?error:null;await capture.finish(!known||known.status>=500?(capture.hasRedemption()?"uncertain":"error"):"rejected",known?.message||"Test payment needs verification. Retry the same voucher.");throw error;}
 }

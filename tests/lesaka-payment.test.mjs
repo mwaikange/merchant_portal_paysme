@@ -342,6 +342,18 @@ test('normal SDK and hosted checkout record manual customer tests privately with
   const saved=JSON.stringify({row,executions:database.lesaka_uat_executions});assert(!saved.includes(pin));assert(!saved.includes('stage-private'));assert(!saved.includes('Authorization'));
  }
 });
+test('completed customer checkout replays are labelled and never create another redemption or passed case',async()=>{
+ await customerSetup();const calls=mockGateway();assert.equal((await checkout()).body.status,'tested');
+ const count=calls.length,passes=database.lesaka_uat_executions.length;
+ const retry=await checkout();assert.equal(retry.body.replayed,true);assert.equal(retry.body.status,'tested');assert.equal(calls.length,count);assert.equal(database.lesaka_uat_executions.length,passes);
+ assert.equal(database.lesaka_uat_customer_attempts[1].outcome,'resolved');assert.match(database.lesaka_uat_customer_attempts[1].message,/no new voucher redemption/);
+});
+
+test('different vouchers on a completed checkout explain that a new checkout is required',async()=>{
+ setup();const calls=mockGateway();assert.equal((await checkout()).body.status,'paid');const count=calls.length;
+ const result=await checkout({confirmation_code:'9876543210123456'});assert.equal(result.status,409);assert.equal(result.body.code,'lesaka_checkout_completed');assert.match(result.body.error,/already redeemed a voucher/);assert.equal(calls.length,count);
+});
+
 test('customer tests reject unknown stock and consumed vouchers without calling redemption',async()=>{
  await customerSetup();database.lesaka_uat_inventory=[];let calls=mockGateway();let result=await checkout();assert.equal(result.status,409);assert.equal(calls.length,0);assert.equal(database.lesaka_uat_customer_attempts[0].outcome,'rejected');
  await customerSetup();calls=mockGateway();globalThis.fetch=async(url,init)=>url.includes('checkout-eligibility')?Response.json({billing:{locked:false},plan:{other_payment_types_enabled:true},methods:{kazang:{enabled:true}}}):Response.json(response(JSON.parse(init.body).clientReference,false,{status:'Consumed',remainingAmount:0}));

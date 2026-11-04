@@ -12,10 +12,11 @@ import * as z from "zod";
 import { Loader2, AlertCircle, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import paysmeLogoSmall from "/lovable-uploads/898057d0-cfa9-48a0-8977-fa341f10e70b.png";
-import paysmeLogoPoweredBy from "/lovable-uploads/d5c691bd-bbf1-4791-be4d-d265756313e4.png";
 import { PaycodeModal } from "@/components/PaycodeModal";
 import { normalizeNamibianMobile, validateNamibianMobile } from "@/lib/validations";
 import { TownAutocomplete } from "@/components/TownAutocomplete";
+
+const checkoutBackground = { backgroundImage: "url('/payments/paysme-secure-card-background-v3.png')" };
 
 // Form validation schema
 const paymentFormSchema = z.object({
@@ -276,11 +277,11 @@ const HostedPayment = () => {
   // Loading state for merchant data
   if (isLoadingMerchant) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-[#151b18] bg-cover bg-right md:bg-center flex items-center justify-center p-4 text-white" style={checkoutBackground}>
+        <Card className="w-full max-w-md border-white/10 bg-[#202820] text-white">
           <CardContent className="flex flex-col items-center justify-center p-8">
             <Loader2 className="h-8 w-8 animate-spin text-green-600 mb-4" />
-            <p className="text-gray-600">Loading payment details...</p>
+            <p className="text-gray-300">Loading payment details...</p>
           </CardContent>
         </Card>
       </div>
@@ -290,12 +291,12 @@ const HostedPayment = () => {
   // Error state if merchant not found
   if (!merchantData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-[#151b18] bg-cover bg-right md:bg-center flex items-center justify-center p-4 text-white" style={checkoutBackground}>
+        <Card className="w-full max-w-md border-white/10 bg-[#202820] text-white">
           <CardContent className="flex flex-col items-center justify-center p-8">
             <AlertCircle className="h-8 w-8 text-red-600 mb-4" />
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">Payment Link Invalid</h2>
-            <p className="text-gray-600 text-center">{linkError || "This payment link is invalid or has expired."}</p>
+            <h2 className="text-lg font-semibold text-white mb-2">Payment Link Invalid</h2>
+            <p className="text-gray-300 text-center">{linkError || "This payment link is invalid or has expired."}</p>
           </CardContent>
         </Card>
       </div>
@@ -304,17 +305,7 @@ const HostedPayment = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        {/* Top Left - Powered By PaySME */}
-        <div className="fixed left-4 top-4 z-10 text-center sm:left-6 sm:top-6">
-          <p className="mb-1 text-xs text-gray-600 sm:mb-2 sm:text-sm">Powered By</p>
-          <img
-            src={paysmeLogoPoweredBy}
-            alt="PaySME - Bridging Wallets, Apps & Websites"
-            className="h-auto w-20 sm:w-24 md:w-35"
-          />
-        </div>
-      </div>
+      <div className="min-h-screen bg-[#151b18] bg-cover bg-right bg-no-repeat md:bg-center" style={checkoutBackground} />
 
       {/* Payment Form Modal */}
       {showPaymentForm && (
@@ -497,7 +488,8 @@ const HostedPayment = () => {
       {/* Payment Code Modal */}
       <PaycodeModal
         isOpen={showPaycodeModal}
-        onClose={() => setShowPaycodeModal(false)}
+        onClose={() => { setShowPaycodeModal(false); setShowPaymentForm(true); }}
+        mobileBrandedPage
         generatedCode={generatedCode}
         paymentData={formData ? { 
           mobile: formData.mobile, 

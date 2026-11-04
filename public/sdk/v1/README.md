@@ -6,6 +6,7 @@ Released 4 November 2026. If you host your own SDK copy, replace that file with 
 
 Lesaka voucher digits remain visible while entered in the SDK and hosted checkout. This display fix keeps version 1.13.0; self-hosted SDK copies must be replaced.
 The voucher font is one point smaller with tighter spacing for mobile. Payment requires the 16-digit PIN; the 12-digit serial number is for status enquiries.
+Hosted payment links use the black checkout design on desktop and mobile. A repeated completed payment displays Already completed and returns `replayed: true`; no voucher is redeemed twice. Use a new checkout for a different voucher/value test, and use the recorder's dedicated short/long-PIN cases for malformed-input tests.
 
 Lesaka uses the Lesaka 4All voucher API through PaySME's server. Customers enter a 16-digit voucher PIN, and the server checks that the voucher is Active, unexpired, denominated in `NAD`, and worth exactly the checkout amount before redeeming its full balance. The SDK displays confirmation only after the server verifies redemption and settlement. An uncertain request must be retried with the same voucher for the same checkout.
 

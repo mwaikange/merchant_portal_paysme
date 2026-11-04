@@ -452,13 +452,14 @@ async function confirmLesakaVoucher(body: Record<string, unknown>, serverAuthori
   if (savedError) throw savedError;
   let attempt = savedAttempt;
   if (attempt && (attempt.voucher_fingerprint !== fingerprint || attempt.amount_minor !== minor)) {
+    if (["tested", "paid"].includes(attempt.status)) return jsonResponse({ error: "This checkout has already redeemed a voucher. Create a new checkout to test or pay with a different voucher.", code: "lesaka_checkout_completed" }, 409);
     return jsonResponse({ error: "Use the original voucher for this checkout or contact support.", code: "lesaka_attempt_conflict" }, 409);
   }
-  if (attempt?.status === "tested") return jsonResponse({ ok: true, status: "tested", environment: "staging", provider: "kazang", generated_code: generatedCode });
+  if (attempt?.status === "tested") return jsonResponse({ ok: true, status: "tested", replayed: true, environment: "staging", provider: "kazang", generated_code: generatedCode });
   if (attempt && ["paid", "redeemed"].includes(attempt.status) && transaction.status === "paid" && transaction.payment_method === "kazang" && transaction.facilitator_id === attempt.facilitator_id && amountMinor(transaction.amount_paid) === minor) {
     const { error } = await supabase.from("lesaka_voucher_attempts").update({ status: "paid", completed_at: new Date().toISOString() }).eq("attempt_id", attempt.attempt_id);
     if (error) throw error;
-    return jsonResponse({ ok: true, status: "paid", provider: "kazang", generated_code: generatedCode, transaction_id: transaction.transaction_id });
+    return jsonResponse({ ok: true, status: "paid", replayed: true, provider: "kazang", generated_code: generatedCode, transaction_id: transaction.transaction_id });
   }
   if (transaction.status !== "pending" || transaction.finalized === true) {
     return jsonResponse({ error: "This PaySME code is no longer pending" }, 409);
