@@ -35,12 +35,20 @@ export async function uatState(admin: SupabaseClient, campaign: Campaign | null)
   if (!campaign) return { campaign: null, inventory: [], executions: [] };
   const result = await admin.from("lesaka_uat_inventory").select("id,fixture_id,value_minor,serial_number,allocation,source_line,observed_state,locked_by").eq("campaign_id", campaign.id).order("source_line");
   if (result.error) throw result.error;
+  const customers: unknown[] = [];
+  for (let offset=0;offset<10000;offset+=500) {
+    const page=await admin.from("lesaka_uat_customer_attempts").select("*").eq("campaign_id",campaign.id).order("created_at",{ascending:true}).range(offset,offset+499);
+    if(page.error)throw page.error;
+    customers.push(...(page.data||[]));
+    if((page.data||[]).length<500)break;
+    if(offset===9500)throw new UatError("Customer test export exceeds its limit.",409);
+  }
   const executions: unknown[] = [];
   for (let offset = 0; offset < 10000; offset += 500) {
     const page = await admin.from("lesaka_uat_executions").select("*,lesaka_uat_notes(*)").eq("campaign_id", campaign.id).order("started_at", { ascending: true }).order("id").range(offset, offset + 499);
     if (page.error) throw page.error;
     executions.push(...(page.data || []));
-    if ((page.data || []).length < 500) return { campaign, inventory: result.data || [], executions };
+    if ((page.data || []).length < 500) return { campaign, inventory: result.data || [], executions, customer_attempts: customers };
   }
   throw new UatError("Campaign exceeds the evidence export limit. Contact PaySME support.", 409);
 }

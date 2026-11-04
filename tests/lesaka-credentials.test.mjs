@@ -23,9 +23,9 @@ globalThis.__credentialAdmin = {
   },
   from(table) {
     const query = {
-      select() { return query; }, eq() { return query; },
+      select() { return query; }, order() {return query;}, limit() {return query;}, eq() { return query; }, upsert() { return query; },
       update(values) { enabled = values.enabled; return query; },
-      async maybeSingle() { return { data: table === "lesaka_merchant_credentials" ? stored : stored ? { enabled } : null, error: null }; },
+      async maybeSingle() { return { data: table === "lesaka_integration_modes" ? {environment: environment.LESAKA_4ALL_ENVIRONMENT || "production",production_approved_at:"2026-01-01"} : table === "lesaka_merchant_credentials" ? stored : stored ? { enabled } : null, error: null }; },
       then(resolve, reject) { return Promise.resolve({ error: null }).then(resolve, reject); },
     };
     return query;
@@ -42,7 +42,7 @@ globalThis.__credentialCaller = {
 let source = readFileSync(new URL("../supabase/functions/lesaka-credentials/index.ts", import.meta.url), "utf8")
   .replace('import { createClient } from "npm:@supabase/supabase-js@2.39.3";', 'const createClient = (_url, key) => key === "server-secret" ? globalThis.__credentialAdmin : globalThis.__credentialCaller;')
   .replace('"../_shared/lesaka-4all.ts"', JSON.stringify(new URL("../supabase/functions/_shared/lesaka-4all.ts", import.meta.url).href))
-  .replace('"../_shared/lesaka-credential-storage.ts"', JSON.stringify(new URL("../supabase/functions/_shared/lesaka-credential-storage.ts", import.meta.url).href));
+  .replace('"../_shared/lesaka-credential-storage.ts"', JSON.stringify(new URL("../supabase/functions/_shared/lesaka-credential-storage.ts", import.meta.url).href)).replace('"../_shared/lesaka-integration-mode.ts"', JSON.stringify(new URL("../supabase/functions/_shared/lesaka-integration-mode.ts", import.meta.url).href));
 await import(`data:text/javascript;base64,${Buffer.from(transformSync(source, { loader: "ts", format: "esm" }).code).toString("base64")}`);
 
 function reset() { allowed = true; stored = null; enabled = false; writeError = null; saves = []; delete environment.LESAKA_4ALL_ENVIRONMENT; environment.LESAKA_CREDENTIALS_ENCRYPTION_KEY = Buffer.alloc(32, 9).toString("base64"); }
@@ -113,3 +113,11 @@ test("customer button cannot be enabled without saved credentials", async () => 
 });
 
 test.after(() => { delete globalThis.Deno; delete globalThis.__credentialAdmin; delete globalThis.__credentialCaller; });
+
+test('live credentials are encrypted separately while the business stays in staging',async()=>{
+ reset();environment.LESAKA_4ALL_ENVIRONMENT='staging';
+ const result=await invoke({...input,action:'save_live',environment:'staging'});
+ assert.equal(result.status,200);assert.equal(result.body.environment,'staging');assert.equal(saves[0].p_environment,'production');
+ assert.deepEqual(await decryptLesakaCredentials(stored.encrypted_credentials,'merchant','production',key=>environment[key]),{api_username:'demo-user',api_password:' demo-password '});
+ assert.equal((await invoke({action:'set_environment',environment:'staging',target_environment:'production',confirmed:false})).status,400);
+});

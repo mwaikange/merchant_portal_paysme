@@ -2,6 +2,8 @@
 
 ## v1.13.0 - 2026-11-04
 
+- Adds per-business staging voucher uploads and three test methods: automatic API checks, manual portal cases, and normal SDK/hosted checkout with background recording. The portal exports current Excel evidence and provides a guarded Staging/Live switch with test-data cleanup. The v1.13.0 JavaScript file remains compatible and needs no further replacement for these centrally managed controls.
+
 - Releases the merchant-specific Lesaka 4All voucher checkout with the same compatible `init`, `create`, `pending` and Request-to-Pay methods.
 - SDK and hosted checkout display central customer guidance for used, expired, cancelled, reversed, unsupported and uncertain vouchers. Provider credentials stay on the server.
 - Adds operator documentation for the private three-cycle test recorder, automatic references/trace IDs, redacted evidence exports and read-only inventory discovery. These tools do not settle real payments.

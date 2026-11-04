@@ -51,6 +51,7 @@ const alwaysAvailablePaths = new Set(["/portal/dashboard", "/portal/tax-settings
 const taxDirectiveRequiredPaths = new Set([
   "/portal/bulk-subscribers",
   "/portal/api-integration",
+  "/portal/api-integration/lesaka-tests",
   "/portal/qr-payment-links",
 ]);
 
@@ -81,12 +82,12 @@ export function PortalFrame({ children }: { children: ReactNode }) {
   const [lockNoticeReason, setLockNoticeReason] = useState<"billing" | "tax" | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
-  const staffDeniedPaths = new Set(["/portal/tax-settings", "/portal/kyc", "/portal/security-access", "/portal/api-integration"]);
+  const staffDeniedPaths = new Set(["/portal/tax-settings", "/portal/kyc", "/portal/security-access", "/portal/api-integration", "/portal/api-integration/lesaka-tests"]);
   const visibleNavItems = navItems.filter((item) =>
     (item.path !== "/portal/bulk-subscribers" || bulkPackageEligible)
     && (merchantSecurity?.actor_role !== "staff" || !staffDeniedPaths.has(item.path))
   );
-  const current = visibleNavItems.find((item) => item.path === location.pathname) || visibleNavItems[0];
+  const current = visibleNavItems.find((item) => item.path === location.pathname || location.pathname.startsWith(item.path+"/")) || visibleNavItems[0];
   const billingLocked = isBillingPastDue(billingStatus);
   const billingAccessPending = false;
   const portalRestricted = billingLocked;
@@ -198,7 +199,7 @@ export function PortalFrame({ children }: { children: ReactNode }) {
           <div className="space-y-0.5">
             {visibleNavItems.map((item) => {
               const Icon = item.icon;
-              const active = item.path === location.pathname;
+              const active = item.path === location.pathname || location.pathname.startsWith(item.path+"/");
               const taxDisabled = !taxDirectiveSaved && taxDirectiveRequiredPaths.has(item.path);
               const billingDisabled = portalRestricted && !alwaysAvailablePaths.has(item.path);
               const disabled = taxDisabled || billingDisabled;

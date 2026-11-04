@@ -1,65 +1,68 @@
-# PaySME Lesaka — Three-cycle UAT workflow
+# Lesaka staging tests for each business
 
-Updated 4 November 2026. SDK release **1.13.0**.
+Updated 4 November 2026. Compatible with SDK **v1.13.0**.
 
-This private recorder is available only to the approved PaySME merchant account in **API & integration > Lesaka test recorder**. It uses the staging credentials saved in that account's Lesaka credential form. Provider usernames and passwords remain on the server. The public SDK and hosted checkout receive no provider credentials.
+Open **API & integration > Facilitator Merchant Codes > Lesaka > Open Lesaka staging tests**. Each business has its own credentials, voucher file, campaign, three cycles and results. Portal API permission is required. Saved provider credentials never enter the SDK or exports.
 
-## Start and record a case
+## Upload the business's voucher file
 
-1. Open **API & integration** and select **Open the three-cycle test recorder** below the Lesaka credentials.
-2. Create the campaign if one does not exist. Import the original, unmodified Lesaka voucher text file if the inventory has not already been loaded.
-3. Choose **Cycle 1**, **2**, or **3**, then select the workbook or website test case.
-4. Choose **My reserved manual vouchers** for your own tests. Select a voucher by its label and line number in the original file. Enter its PIN when requested. PINs from your reserved allocation are not stored by the recorder.
-5. Read the expected result and any review note. Redemption cases require explicit confirmation because a successful call consumes a voucher. Select **Run and record test**.
-6. Read the recorded verdict and evidence. Add an observation if needed. Notes preserve your observations and do not change the automated verdict.
-7. Download **results CSV** to view in Excel and **full evidence JSON** for detailed request/response records. Export after each cycle and retain the final report for Lesaka.
+Save the staging username and password issued to that business. Create its three-cycle campaign, then upload its original Lesaka `.txt` voucher file. The supplier format contains denomination headings such as `N$10` followed by `Serial Number, PIN` rows.
 
-There are 30 checklist entries per cycle: 18 cases from the supplied workbook and 12 from Lesaka's published UAT page. Overlapping cases retain their separate supplier IDs. Earlier attempts remain in the export. The cycle tabs show the 12 mandatory guide cases; all 18 workbook checks remain in the checklist and exports. Guide completion is reported separately from full checklist completion. All supplier-required entries and three successful cycles are required for sign-off. PaySME automation runs Cycle 1; the operator runs Cycles 2 and 3. The recorder does not grant production approval.
+The file is the voucher list for that business and campaign. Its checksum fixes the uploaded order. For each denomination, the first `floor(count / 2)` vouchers are available to automatic checks and the rest remain reserved for manual/customer testing. Automatic PINs are encrypted. Reserved PINs are not stored: the server matches a customer-entered PIN using its keyed fingerprint and finds the serial number in the same business's inventory. No other business's inventory or credentials are used.
 
-## Voucher allocation
+The PaySME pack already loaded contains 81 vouchers: 40 automatic and 41 manual. A read-only scan on 3 November found 80 Active and the one Consumed N$10 voucher used in Cycle 1; no Expired or Cancelled voucher was present. Other businesses upload their own packs.
 
-The original order is fixed by an approved file checksum. For **each denomination**, automation receives only the first `floor(count / 2)` vouchers. The remaining vouchers are reserved for manual testing and cannot be selected by automated calls. The current pack allocates 40 vouchers to automation and reserves 41 for manual tests. Importing the file does not redeem vouchers.
+## Three ways to test
 
-The recorder stores encrypted PINs only for the automated allocation. It stores labels, serial numbers, source line numbers and non-reversible keyed fingerprints for the manual allocation. Manual PIN entry is cleared after a run. Keep the original file private.
+### Customer payment modal or hosted checkout
 
-A fixture must have the state required by its case. The recorder checks status before a redemption and blocks an incompatible fixture rather than redeeming it to manufacture the expected error. Expired, cancelled, reversed, consumed and unsupported-product cases may need separate fixtures from Lesaka. Successful redemptions require fresh Active vouchers. Do not assume the initial pack contains every state needed for three cycles.
+1. Choose a cycle on the test page and select **Start customer testing**. A session lasts 24 hours and can be stopped earlier.
+2. Choose an invoice amount whose final checkout total matches an unused test voucher. Open **payment modal** or **hosted checkout**, or use that business's existing PaySME payment button.
+3. Complete the ordinary customer form, select Lesaka, and enter only the voucher PIN.
+4. Return to the test page. The server records the checkout, its cycle, status enquiry, matching serial enquiry, redemption outcome, references, receipt IDs, trace IDs when returned, timestamps and redacted requests/responses. Results refresh when the page regains focus.
 
-## Evidence, retries and results
+Retries retain the original redemption reference and original cycle for that checkout. A successful test displays a test confirmation and does not emit a paid callback or settle live money. The database marks these checkouts as tests and blocks paid status or a paid amount. They are excluded from live dashboard and transaction reports.
 
-Every execution records its cycle, case ID, execution ID, client reference, request time, timestamps, HTTP status and redacted request/response evidence. Provider receipt IDs and trace IDs are retained when returned, displayed with the selected result, and included in dedicated CSV columns. No trace ID is invented when the provider omits it. The Excel tracker is a separate snapshot with Cycle 1 results and editable Cycle 2/3 sheets; the portal remains the saved record. Export after each cycle, and the tracker can be refreshed from those records. PINs, authentication headers and provider credentials are removed from evidence and exports. Requests, status prechecks and post-redemption checks remain associated with the same execution.
+Only scenarios actually demonstrated by captured requests appear as passed in the guide checklist. A normal customer checkout cannot create missing-reference or over-redemption requests. Those cases remain available through the other testing methods; no success is inferred for them.
 
-A timeout or uncertain redemption remains **Uncertain**. Use **Retry original execution**, with the same selected voucher and manual PIN if required. The server preserves the original redemption reference and request time. Do not start a new redemption to resolve an uncertain one. Interrupted executions can be resumed after their running lease expires; their saved intent remains available.
+### Manual tests in the portal
 
-The idempotency case selects an earlier successful redemption from the same cycle and fixture and reuses its original request. It verifies the original provider receipt and zero remaining balance.
+Choose **Manual portal tests**, select a case and voucher, and enter the PIN for a reserved voucher when required. Confirm intended staging redemptions, then select **Run and record test**. Add a manual observation if useful. Notes do not turn a failed or uncertain result into a pass.
 
-**Passed**, **Failed**, **Needs review**, **Blocked**, **Uncertain**, **Error**, and **Running** are distinct states. A failed or blocked attempt stays in history even after a later attempt passes. A note cannot create a pass. CSV includes every attempt and all unrun checklist entries; JSON includes the checklist, case definitions, safe inventory metadata, observations and detailed evidence.
+### Automatic API checks
 
-## Supplier questions that can block sign-off
+Choose **Automatic tests**, confirm that staging vouchers may be redeemed, then select **Run automatic checks**. Only unrecorded guide cases are attempted. Automation uses its first-half allocation, records missing fixtures as blocked, and stops when a redemption outcome is uncertain. It never consumes reserved manual vouchers.
 
-- The workbook uses New, Redeemed and Spoilt while the API schema uses Active, Consumed and Reversed. Confirm the mapping with Lesaka.
-- Some workbook assertions require product or redemption metadata absent from the published response schema. A successful HTTP response alone does not prove those assertions.
-- Published negative cases sometimes expect HTTP 403 while the API documents HTTP 409 for business conflicts. Matching business errors under a different status remain for review.
-- Validation responses can use a validation-problem body rather than error code 5005. Preserve the actual response for clarification.
-- Website TC-RED-05 asks for over-redemption, but the published redeem request has no amount field and supports full redemption only. The recorder records this case as blocked without inventing an API field or consuming a voucher.
+## Results and Excel
 
-Ask Lesaka to confirm amended expectations or provide the required fixtures. The recorder deliberately keeps these entries incomplete until the requirements are resolved.
+Each cycle has 12 mandatory guide cases; the 18 workbook cases remain available too. The page shows progress separately for all three cycles, customer checkout outcomes and prior attempts. **Download Excel** creates a current workbook with Cycle 1, 2 and 3 sheets, customer checkouts and technical evidence. CSV and full JSON are also available. `clientReference`, Lesaka receipt IDs and `traceId` have dedicated columns. A missing trace ID is left absent or labelled Not returned; none is invented.
 
-## Separation from real payments
+Supplier-required special fixtures must really be Expired, Cancelled, Consumed or otherwise suitable. An Active voucher cannot prove a negative-state case. All requested cases and three successful cycles require supplier approval before going live.
 
-This workflow calls only the fixed Lesaka staging host and is independent of payment transactions. It does not mark a checkout paid, credit a merchant balance, send payment-success SMS messages or trigger merchant payment webhooks. Real SDK and hosted-checkout behavior remains documented in the [API integration guide](./PaySME_Payment_Modal_API_Integration.md).
+## Switch this business to Live
 
-The private Edge Function authenticates the signed-in user and checks merchant API permission. It also requires the enabled flag, the allowlisted PaySME merchant ID and the staging environment. Its database tables are inaccessible directly to browser roles. Server settings are `LESAKA_UAT_ENABLED`, `LESAKA_UAT_MERCHANT_ID` and `LESAKA_UAT_INVENTORY_SHA256`; existing credential encryption and fingerprint secrets remain unchanged. The merchant's saved credential version is bound to its campaign; changing credentials requires a new campaign.
+On the business's Lesaka card, expand **Live credentials and approval** and save the live username/password supplied by Lesaka. They are stored separately from staging credentials and do not switch the environment by themselves.
+
+After all 12 guide cases pass in each of three cycles, download Excel and full evidence. Enter the Lesaka approval reference and confirm that Lesaka approved the business's cycles and the evidence was exported. The **Use live Lesaka payments** switch then activates that business's live credentials. No SDK change, provider URL edit, Edge Function password replacement or website reconfiguration is needed.
+
+Activation closes and removes the completed staging campaign. Test checkouts remain permanently marked as tests, are closed, and cannot become live payments. The business's approval timestamp/reference is retained as setup history. A business can return to staging using the same control; unresolved payments block an environment switch. Each other business follows its own onboarding and three-cycle process.
+
+## Cleanup after testing
+
+Stop customer testing and download the evidence. **Delete exported test results** removes that business's campaign, results, observations and voucher inventory. Running or uncertain outcomes must first be resolved. Cleanup closes pending test checkouts while retaining their permanent test marker; it never deletes or promotes live payment records. Successful completion is retained as a setup marker so live activation can happen after the detailed test results have been removed.
+
+## Supplier issues already identified
+
+- Validation can return HTTP 400 field-error ProblemDetails without business code 5005. Preserve the actual response for Lesaka's confirmation.
+- The consumed-voucher negative case returned HTTP 502 / upstream business status 5008 rather than the guide's HTTP 403 / 5001. It remains unresolved, not passed.
+- TC-RED-05 asks for an amount above the remaining balance, but the published redeem request has no amount field and supports only full redemption. It remains blocked until Lesaka clarifies the test.
+- Workbook labels and some metadata expectations differ from the OpenAPI schema. Review results preserve those differences.
 
 ## Supplier references
 
 - [Integration guide](https://lesaka-adp-4allvoucher.apidocumentation.com/guide/integration-guide)
-- [API reference](https://lesaka-adp-4allvoucher.apidocumentation.com/lesaka-4-all-voucher-api#description/introduction)
 - [UAT cases](https://lesaka-adp-4allvoucher.apidocumentation.com/guide/uat-test-cases)
-- [Error codes](https://lesaka-adp-4allvoucher.apidocumentation.com/guide/error-codes)
+- [API reference](https://lesaka-adp-4allvoucher.apidocumentation.com/lesaka-4-all-voucher-api#description/introduction)
 - [Reporting](https://lesaka-adp-4allvoucher.apidocumentation.com/guide/reporting)
 
-Lesaka's email requires a minimum of **three successful test cycles**, executed in staging. Submit cycle number, case/execution reference, date and time, and request/response evidence. Daily provider reconciliation reports use major currency units, while API `minor` amounts use cents. The recorder's evidence is a UAT record and does not replace the supplier's settlement report.
-
-## Read-only inventory discovery
-
-An authorized operator can use the private recorder's `inspect` action to query a stored voucher by its 12-digit serial number, including vouchers reserved for manual testing. This action is fixed to the staging **status** endpoint, accepts only an inventory fixture ID, never submits a PIN and cannot call redemption. Validated states update the inventory labels used by the recorder; discovery evidence is retained in the operator's exported status scan. It does not count as a mandatory UAT case execution. Automated **redemption** remains restricted to the original first-half allocation.
+Backend operators enable UAT with `LESAKA_UAT_ENABLED` and customer checkout capture with `LESAKA_UAT_CUSTOMER_CHECKOUT_ENABLED`. The per-business integration mode selects the fixed staging or production host; credentials remain encrypted and scoped to that merchant/environment. The legacy PaySME inventory checksum remains pinned for its current pack. Private tables are accessed through authenticated Edge Functions, not directly by browser roles.

@@ -11,8 +11,9 @@ export async function runUat(body: Record<string, unknown>, context: Context) {
   const test = LESAKA_UAT_CASES.find(item => item.id === body.case_id), cycle = Number(body.cycle);
   if (!test || !Number.isInteger(cycle) || cycle < 1 || cycle > 3 || !uuid(body.execution_id)) throw new UatError("Select a valid case and cycle.");
   const mode = service || body.mode === "automated" ? "automated" : "manual";
+  const unavailable = body.fixture_unavailable === true && needsFixture(test);
   let fixture: Fixture | null = null;
-  if (needsFixture(test) && !test.blocked) {
+  if (needsFixture(test) && !test.blocked && !unavailable) {
     if (!uuid(body.fixture_id)) throw new UatError("Choose a voucher.");
     const result = await admin.from("lesaka_uat_inventory").select("*").eq("id", body.fixture_id).eq("campaign_id", campaign.id).maybeSingle();
     if (result.error) throw result.error;
@@ -82,6 +83,7 @@ export async function runUat(body: Record<string, unknown>, context: Context) {
     return { ...record, response };
   };
   if (test.blocked) return await finish("blocked", test.blocked);
+  if (unavailable) return await finish("blocked", "A matching voucher or original redemption is not available for this case. No provider request was made.");
   if (fixture && test.operation === "redeem") {
     if (fixture.locked_by && fixture.locked_by !== run.id) return await finish("blocked", "Voucher has an unresolved redemption. Resume its original execution first.");
     if (!fixture.locked_by) {

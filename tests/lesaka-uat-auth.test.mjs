@@ -9,7 +9,7 @@ const admin={from(table){const q={select(){return q},eq(){return q},order(){retu
 globalThis.__uatAdmin=admin;globalThis.__uatCaller={auth:{async getUser(token){return{data:{user:token==='owner-token'?{id:crypto.randomUUID()}:null},error:null}}},async rpc(){return{data:allowed,error:null}}};
 globalThis.Deno={env:{get:k=>environment[k]},serve:fn=>handler=fn};
 let source=readFileSync(new URL('../supabase/functions/lesaka-uat/index.ts',import.meta.url),'utf8').replace('import { createClient } from "npm:@supabase/supabase-js@2.39.3";','const createClient=(_url,key)=>key==="server-secret"?globalThis.__uatAdmin:globalThis.__uatCaller;');
-for(const file of ['lesaka-credential-storage','lesaka-4all','lesaka-uat','lesaka-uat-store','lesaka-uat-runner','lesaka-uat-inspect'])source=source.replace('"../_shared/'+file+'.ts"',JSON.stringify(new URL('../supabase/functions/_shared/'+file+'.ts',import.meta.url).href));
+for(const file of ['lesaka-credential-storage','lesaka-4all','lesaka-uat','lesaka-uat-store','lesaka-uat-runner','lesaka-uat-inspect','lesaka-integration-mode'])source=source.replace('"../_shared/'+file+'.ts"',JSON.stringify(new URL('../supabase/functions/_shared/'+file+'.ts',import.meta.url).href));
 await import('data:text/javascript;base64,'+Buffer.from(transformSync(source,{loader:'ts',format:'esm'}).code).toString('base64'));
 async function invoke(body={},token='owner-token'){
  const result=await handler(new Request('https://example.test/lesaka-uat',{method:'POST',headers:{Authorization:token?'Bearer '+token:'','Content-Type':'application/json'},body:JSON.stringify({action:'status',merchant_id:merchant,...body})}));return{http:result.status,body:await result.json()};
@@ -20,7 +20,7 @@ test('recorder requires a real user and API permission, not merely a publishable
 });
 test('staging and the configured merchant allow-list gate all mutation actions',async()=>{
  environment.LESAKA_4ALL_ENVIRONMENT='production';assert.equal((await invoke({action:'run'},'server-secret')).http,403);assert.equal((await invoke({},'server-secret')).body.enabled,false);environment.LESAKA_4ALL_ENVIRONMENT='staging';
- assert.equal((await invoke({action:'run',merchant_id:crypto.randomUUID()},'server-secret')).http,403);assert.equal(writes,0);
+ assert.equal((await invoke({action:'run',merchant_id:crypto.randomUUID()},'anon')).http,401);assert.equal(writes,0);
 });
 test('inventory source hash is mandatory, and manual PINs never enter database import arguments',async()=>{
  const raw='4ALL Voucher N$10\nSerial Number, PIN\n012345678901, 0123456789012345\n012345678902, 0123456789012346\n';

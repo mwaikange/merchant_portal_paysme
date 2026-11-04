@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { encryptLesakaCredentials } from "../_shared/lesaka-credential-storage.ts";
 import { LesakaError } from "../_shared/lesaka-4all.ts";
+import { merchantLesakaEnv } from "../_shared/lesaka-integration-mode.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -21,7 +22,6 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const merchantId = typeof body.merchant_id === "string" ? body.merchant_id : "";
-    const environment = Deno.env.get("LESAKA_4ALL_ENVIRONMENT") === "staging" ? "staging" : "production";
     if (!merchantId) return json({ error: "Merchant is required" }, 400);
     const authorization = req.headers.get("Authorization") || "";
     const token = authorization.replace(/^Bearer\s+/i, "");
@@ -30,18 +30,28 @@ Deno.serve(async (req) => {
     if (authError || !identity.user) return json({ error: "Sign in to manage Lesaka credentials" }, 401);
     const { data: allowed, error: permissionError } = await caller.rpc("merchant_portal_allowed", { p_merchant_id: merchantId, p_permission: "api" });
     if (permissionError || allowed !== true) return json({ error: "You do not have permission to manage this merchant's API settings" }, 403);
+    const enrolled = await admin.from("lesaka_integration_modes").upsert({merchant_id:merchantId,environment:"staging"},{onConflict:"merchant_id",ignoreDuplicates:true});
+    if(enrolled.error) throw enrolled.error;
+    const mode = await merchantLesakaEnv(admin,merchantId,key=>Deno.env.get(key));
+    const environment=mode.environment;
     if (body.action !== "status" && body.environment !== environment) return json({ error: "Lesaka setup has changed. Reload this page before saving." }, 409);
 
-    if (body.action === "save") {
+    if (body.action === "set_environment") {
+      if(!["staging","production"].includes(body.target_environment)||body.confirmed!==true)return json({error:"Confirm the Lesaka environment change first."},400);
+      const changed=await admin.rpc("set_lesaka_environment",{p_merchant:merchantId,p_environment:body.target_environment,p_reference:typeof body.approval_reference==="string"?body.approval_reference.trim():""});
+      if(changed.error)return json({error:"Live activation requires saved live credentials, all 12 guide cases passed in each of 3 cycles, exported evidence and Lesaka approval. Resolve pending or uncertain outcomes before switching."},409);
+      return json({ok:true,reload:true});
+    } else if (body.action === "save" || body.action === "save_live") {
       const username = typeof body.username === "string" ? body.username.trim() : "";
       const password = typeof body.password === "string" ? body.password : "";
       const storeId = typeof body.store_id === "string" ? body.store_id.trim() : "";
       if (!username || username.length > 512 || username.includes(":") || !password || password.length > 4096 || storeId.length > 128) {
         return json({ error: "Enter a valid Lesaka username and password. Store ID is optional." }, 400);
       }
-      const encrypted = await encryptLesakaCredentials({ api_username: username, api_password: password }, merchantId, environment, key => Deno.env.get(key));
+      const target=body.action==="save_live"?"production":environment;
+      const encrypted = await encryptLesakaCredentials({ api_username: username, api_password: password }, merchantId, target, key => Deno.env.get(key));
       const { error } = await admin.rpc("save_lesaka_merchant_credentials", {
-        p_merchant_id: merchantId, p_environment: environment, p_credentials: encrypted, p_store_id: storeId || null,
+        p_merchant_id: merchantId, p_environment: target, p_credentials: encrypted, p_store_id: storeId || null,
       });
       if (error) {
         // Validation/DB diagnostics may include submitted values. Never log or
@@ -68,7 +78,11 @@ Deno.serve(async (req) => {
     const { data: facilitator, error: facilitatorError } = await admin.from("merchant_payment_facilitators")
       .select("enabled").eq("merchant_id", merchantId).eq("provider_key", "kazang").maybeSingle();
     if (statusError || facilitatorError) throw statusError || facilitatorError;
-    return json({ ok: true, environment, configured: Boolean(record), store_id: record?.store_id || "", updated_at: record?.updated_at || null, enabled: facilitator?.enabled === true });
+    const live=await admin.from("lesaka_merchant_credentials").select("credential_version").eq("merchant_id",merchantId).eq("environment","production").maybeSingle();
+    if(live.error)throw live.error;
+    let completed=mode.uatCompleted;
+    if(!completed){const c=await admin.from("lesaka_uat_campaigns").select("id").eq("merchant_id",merchantId).order("created_at",{ascending:false}).limit(1).maybeSingle();if(c.error)throw c.error;if(c.data?.id){const count=await admin.rpc("lesaka_passed_guide_cases",{p_campaign:c.data.id});if(count.error)throw count.error;completed=count.data===36;}}
+    return json({ ok: true, environment, configured: Boolean(record), store_id: record?.store_id || "", updated_at: record?.updated_at || null, enabled: facilitator?.enabled === true,live_configured:Boolean(live.data),live_ready:completed&&Boolean(live.data),approval_reference:mode.approvalReference });
   } catch (error) {
     if (error instanceof LesakaError) return json({ error: error.message, code: error.code }, error.status);
     return json({ error: "Lesaka settings are unavailable. Please try again or contact support." }, 500);

@@ -116,7 +116,7 @@ const TrackTransactions = () => {
       const {
         data,
         error
-      } = await supabase.from('transactions').select('*').eq('merchant_id', merchant.merchant_id).order('date_generated', {
+      } = await supabase.from('transactions').select('*').eq('is_test', false).eq('merchant_id', merchant.merchant_id).order('date_generated', {
         ascending: false
       });
       if (error) throw error;

@@ -2,6 +2,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { amountMinor, lesakaConfig, lesakaPlatformConfig, LesakaError, LESAKA_PENDING_MESSAGE, lesakaRequest, pinFingerprint, verifyVoucher, voucherPin } from "../_shared/lesaka-4all.ts";
 import { decryptLesakaCredentials } from "../_shared/lesaka-credential-storage.ts";
 
+import { merchantLesakaEnv, customerUatSession } from "../_shared/lesaka-integration-mode.ts";
+import { beginCustomerCapture, recordCustomerResponse } from "../_shared/lesaka-customer-capture.ts";
 type ProviderKey = "mtc_maris" | "paypulse" | "paytoday" | "kazang";
 const providerKeys: ProviderKey[] = ["mtc_maris", "paypulse", "paytoday", "kazang"];
 
@@ -399,9 +401,11 @@ function requestProviderCode(body: Record<string, unknown>) {
 }
 
 async function confirmLesakaVoucher(body: Record<string, unknown>, serverAuthorized = false) {
-  const platform = lesakaPlatformConfig(key => Deno.env.get(key));
+  const requestedMerchant = asString(body.merchant_id || body.vendor_uuid);
+  const mode = await merchantLesakaEnv(supabase, requestedMerchant, key => Deno.env.get(key));
+  const platform = lesakaPlatformConfig(mode.env);
   if (!platform) return jsonResponse({ ok: false, error: LESAKA_PENDING_MESSAGE, code: "lesaka_not_configured" }, 503);
-  if (platform.environment === "staging" && !serverAuthorized) return jsonResponse({ error: "Lesaka staging requires server authorization" }, 403);
+
   const pin = voucherPin(body.confirmation_code);
   const merchantId = asString(body.merchant_id || body.vendor_uuid);
   const apiKey = asString(body.api_key);
@@ -424,8 +428,18 @@ async function confirmLesakaVoucher(body: Record<string, unknown>, serverAuthori
     .eq("merchant_id", transaction.merchant_id).eq("environment", platform.environment).maybeSingle();
   if (credentialsError) throw new LesakaError("Lesaka payments are unavailable for this merchant.", 503, "lesaka_credentials_unavailable");
   const merchantCredentials = credentials ? await decryptLesakaCredentials(credentials.encrypted_credentials, transaction.merchant_id, platform.environment, key => Deno.env.get(key)) : null;
-  const config = lesakaConfig(key => Deno.env.get(key), merchantCredentials);
+  const config = lesakaConfig(mode.env, merchantCredentials);
   if (!config) return jsonResponse({ error: "Lesaka credentials have not been configured for this merchant.", code: "lesaka_merchant_not_configured" }, 503);
+  const testSession = config.environment === "staging" && credentials ? await customerUatSession(supabase, merchantId, credentials.credential_version, mode.env) : null;
+  if (config.environment === "staging" && !serverAuthorized && !testSession) return jsonResponse({ error: "Lesaka customer testing is not active for this merchant." }, 403);
+  if (config.environment === "production" && transaction.is_test) return jsonResponse({ error: "This is a test checkout. Create a new payment for live checkout." }, 409);
+  const capture = testSession && !serverAuthorized ? await beginCustomerCapture(supabase, testSession, transaction, pin, merchantCredentials!, config.fingerprintSecret, body.hosted_payment === true) : null;
+  return await recordCustomerResponse(capture, async () => {
+  if (capture) {
+    const marked = await supabase.from("transactions").update({ is_test: true, test_provider: "lesaka", test_session_id: testSession.id }).eq("transaction_id", transaction.transaction_id).eq("status", "pending");
+    if (marked.error) throw new LesakaError("Test checkout could not be marked safely. Try again.", 503);
+    capture.requireFixture();
+  }
   // Restricted vendor obligations are not enabled for voucher payments yet.
   if (transaction.vendor_redeemable === false || transaction.vendor_obligation_id ||
       (Array.isArray(transaction.allowed_payment_methods) && !transaction.allowed_payment_methods.includes("kazang"))) {
@@ -463,7 +477,7 @@ async function confirmLesakaVoucher(body: Record<string, unknown>, serverAuthori
     body: JSON.stringify({ merchant_id: merchantId, api_key: apiKey, hosted_payment: body.hosted_payment === true, amount_nad: transaction.amount }),
   });
   const eligibility = await eligibilityResponse.json();
-  const stagingAllowed = config.environment === "staging" && serverAuthorized && !eligibility.billing?.locked && eligibility.plan?.other_payment_types_enabled === true && eligibility.methods?.kazang?.credentials_present === true && eligibility.methods?.kazang?.merchant_enabled === true && eligibility.methods?.kazang?.status !== "rejected";
+  const stagingAllowed = config.environment === "staging" && (serverAuthorized || Boolean(testSession)) && !eligibility.billing?.locked && eligibility.plan?.other_payment_types_enabled === true && eligibility.methods?.kazang?.credentials_present === true && eligibility.methods?.kazang?.merchant_enabled === true && eligibility.methods?.kazang?.status !== "rejected";
   if (!eligibilityResponse.ok || (!eligibility.methods?.kazang?.enabled && !stagingAllowed)) {
     return jsonResponse({ error: "Lesaka voucher payments are not available for this checkout" }, 403);
   }
@@ -476,8 +490,13 @@ async function confirmLesakaVoucher(body: Record<string, unknown>, serverAuthori
       return jsonResponse({ error: "Lesaka is not active for this merchant" }, 409);
     }
     const statusReference = crypto.randomUUID();
-    const status = await lesakaRequest(config, "status", { pin, clientReference: statusReference, requestTime: new Date().toISOString(), ...(credentials.store_id ? { storeId: credentials.store_id } : {}) });
+    const status = await lesakaRequest(config, "status", { pin, clientReference: statusReference, requestTime: new Date().toISOString(), ...(credentials.store_id ? { storeId: credentials.store_id } : {}) }, capture?.transport || fetch);
     verifyVoucher(status, statusReference, minor);
+    if (capture?.fixture) {
+      const serialReference = crypto.randomUUID();
+      const serialStatus = await lesakaRequest(config, "status", { serialNumber: capture.fixture.serial_number, clientReference: serialReference, requestTime: new Date().toISOString(), ...(credentials.store_id ? { storeId: credentials.store_id } : {}) }, capture.transport);
+      verifyVoucher(serialStatus, serialReference, minor);
+    }
     // Commit the stable redemption reference before calling Lesaka. A unique
     // transaction and voucher fingerprint prevent parallel checkout attempts.
     const { data: inserted, error: insertError } = await supabase.from("lesaka_voucher_attempts").insert({
@@ -497,7 +516,7 @@ async function confirmLesakaVoucher(body: Record<string, unknown>, serverAuthori
       // exact reference, time and store ID recorded before the first request.
       const response = await lesakaRequest(config, "redeem", {
         pin, clientReference: attempt.attempt_id, requestTime: new Date(attempt.request_time).toISOString(), ...(attempt.merchant_code ? { storeId: attempt.merchant_code } : {}),
-      });
+      }, capture?.transport || fetch);
       const receipt = verifyVoucher(response, attempt.attempt_id, minor, true);
       const { error } = await supabase.from("lesaka_voucher_attempts").update({
         status: "redeemed", provider_transaction_id: receipt.id, error_code: null, trace_id: null,
@@ -537,6 +556,7 @@ async function confirmLesakaVoucher(body: Record<string, unknown>, serverAuthori
   if (completeError) throw completeError;
   if (!paid) return jsonResponse({ error: "The voucher was redeemed but this checkout needs support review. Do not submit another voucher.", code: "lesaka_reconciliation_required" }, 409);
   return jsonResponse({ ok: true, status: "paid", provider: "kazang", generated_code: generatedCode, transaction_id: transaction.transaction_id });
+  });
 }
 
 function providerStatus(value: string) {

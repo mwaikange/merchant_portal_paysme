@@ -90,7 +90,7 @@ globalThis.Deno = { env: { get: key => environment?.[key] }, serve: fn => { hand
 let source = readFileSync(new URL("../supabase/functions/mobiwand-payment/index.ts", import.meta.url), "utf8")
   .replace('import { createClient } from "npm:@supabase/supabase-js@2.39.3";', 'const createClient = () => ({ from: (...args) => globalThis.__lesakaDb.from(...args) });')
   .replace('"../_shared/lesaka-4all.ts"', JSON.stringify(new URL("../supabase/functions/_shared/lesaka-4all.ts", import.meta.url).href))
-  .replace('"../_shared/lesaka-credential-storage.ts"', JSON.stringify(new URL("../supabase/functions/_shared/lesaka-credential-storage.ts", import.meta.url).href));
+  .replace('"../_shared/lesaka-credential-storage.ts"', JSON.stringify(new URL("../supabase/functions/_shared/lesaka-credential-storage.ts", import.meta.url).href)).replace('"../_shared/lesaka-integration-mode.ts"', JSON.stringify(new URL("../supabase/functions/_shared/lesaka-integration-mode.ts", import.meta.url).href)).replace('"../_shared/lesaka-customer-capture.ts"', JSON.stringify(new URL("../supabase/functions/_shared/lesaka-customer-capture.ts", import.meta.url).href));
 environment = { SUPABASE_URL: "https://example.test", SUPABASE_SERVICE_ROLE_KEY: "server-secret", ...credentials };
 await import(`data:text/javascript;base64,${Buffer.from(transformSync(source, { loader: "ts", format: "esm" }).code).toString("base64")}`);
 
@@ -100,7 +100,7 @@ function setup() {
     merchants: [{ merchant_id: "merchant", business_name: "Shop", api_key: "sdk-key" }],
     transactions: [{ transaction_id: "transaction", merchant_id: "merchant", generated_code: "1234-5678-9012", amount: 50, status: "pending", finalized: false }],
     merchant_payment_facilitators: [{ merchant_id: "merchant", provider_key: "kazang", facilitator_id: "facilitator", provider_merchant_code: "store-code", enabled: true, status: "active" }],
-    lesaka_voucher_attempts: [],
+    lesaka_voucher_attempts: [], lesaka_integration_modes: [], lesaka_uat_campaigns: [], lesaka_uat_customer_attempts: [], lesaka_uat_inventory: [], lesaka_uat_executions: [],
     lesaka_merchant_credentials: [
       { merchant_id: "merchant", environment: "production", encrypted_credentials: productionEncrypted, store_id: null, credential_version: reference },
       { merchant_id: "merchant", environment: "staging", encrypted_credentials: stagingEncrypted, store_id: null, credential_version: reference },
@@ -111,17 +111,18 @@ function setup() {
     let values;
     const filters = [];
     const query = {
-      select() { return query; }, eq(key, value) { filters.push(row => row[key] === value); return query; },
+      select() { return query; }, order() { return query; }, limit() { return query; }, neq(key,value) { filters.push(row=>row[key]!==value);return query; }, eq(key, value) { filters.push(row => row[key] === value); return query; },
       in(key, values) { filters.push(row => values.includes(row[key])); return query; },
       update(value) { operation = "update"; values = value; return query; },
-      insert(value) { operation = "insert"; values = value; return query; },
+      insert(value) { operation = "insert"; values = value; return query; }, upsert(value) {operation="upsert";values=value;return query;},
       single() { return run(); }, maybeSingle() { return run(); }, then(resolve, reject) { return run().then(resolve, reject); },
     };
     async function run() {
       let rows = database[table].filter(row => filters.every(filter => filter(row)));
+      if (operation === "upsert") {const existing=database[table].find(r=>r.id===values.id);if(existing)Object.assign(existing,values);else database[table].push({...values});return{data:values,error:null};}
       if (operation === "insert") {
-        if (database[table].some(row => row.environment === values.environment && (row.transaction_id === values.transaction_id || row.voucher_fingerprint === values.voucher_fingerprint))) return { data: null, error: { code: "23505" } };
-        const inserted = { attempt_id: crypto.randomUUID(), request_time: new Date().toISOString(), status: "redeeming", ...values };
+        if (table === "lesaka_voucher_attempts" && database[table].some(row => row.environment === values.environment && (row.transaction_id === values.transaction_id || row.voucher_fingerprint === values.voucher_fingerprint))) return { data: null, error: { code: "23505" } };
+        const inserted = { id:crypto.randomUUID(), created_at:new Date().toISOString(), outcome:"running", attempt_id: crypto.randomUUID(), request_time: new Date().toISOString(), status: "redeeming", ...values };
         database[table].push(inserted); rows = [inserted];
       }
       if (operation === "update") rows.forEach(row => Object.assign(row, values));
@@ -322,4 +323,45 @@ test('gateway preserves staging ProblemDetails business codes and gives customer
   await assert.rejects(lesakaRequest(config,'redeem',{pin,clientReference:reference,requestTime:'now'},async()=>Response.json({status:5008,traceId:'trace-staging',detail:pin},{status:502})),error=>error.code==='lesaka_5008'&&error.traceId==='trace-staging'&&!error.message.includes(pin));
   await assert.rejects(lesakaRequest(config,'status',{pin,clientReference:reference,requestTime:'now'},async()=>Response.json({status:401},{status:401})),error=>error.message.includes('choose another payment method')&&!error.message.includes('password'));
   await assert.rejects(lesakaRequest(config,'status',{pin,clientReference:reference,requestTime:'now'},async()=>Response.json({errorCode:5006},{status:409})),error=>error.message.includes('not a supported Lesaka'));
+});
+
+async function customerSetup(){
+ setup();environment.LESAKA_4ALL_ENVIRONMENT='staging';environment.LESAKA_UAT_ENABLED='true';environment.LESAKA_UAT_CUSTOMER_CHECKOUT_ENABLED='true';
+ const campaign=crypto.randomUUID(),fixture=crypto.randomUUID();
+ database.lesaka_uat_campaigns.push({id:campaign,merchant_id:'merchant',credential_version:reference,inventory_sha256:'approved',customer_cycle:2,customer_until:new Date(Date.now()+60000).toISOString()});
+ database.lesaka_uat_inventory.push({id:fixture,campaign_id:campaign,fixture_id:'NAD50-M01',allocation:'manual',value_minor:5000,serial_number:'012345678901',pin_fingerprint:await pinFingerprint(pin,credentials.LESAKA_4ALL_FINGERPRINT_SECRET)});
+ return {campaign,fixture};
+}
+test('normal SDK and hosted checkout record manual customer tests privately without settling live money',async()=>{
+ for(const hosted of [false,true]){
+  await customerSetup();const calls=mockGateway();const result=await checkout(hosted?{hosted_payment:true,api_key:undefined}:{});
+  assert.equal(result.status,200);assert.equal(result.body.status,'tested');assert.equal(database.transactions[0].status,'pending');assert.equal(database.transactions[0].is_test,true);
+  const row=database.lesaka_uat_customer_attempts[0];assert.equal(row.cycle,2);assert.equal(row.channel,hosted?'hosted':'sdk');assert.equal(row.outcome,'tested');
+  assert.deepEqual(row.evidence.map(c=>c.operation),['status','status','redeem']);assert.equal(row.evidence[0].request.pin,'[REDACTED]');assert.equal(row.evidence[1].request.serialNumber,'012345678901');
+  assert.equal(calls.filter(c=>c.url.endsWith('/redeem')).length,1);assert.deepEqual(database.lesaka_uat_executions.map(e=>e.case_id).sort(),['TC-RED-01','TC-STAT-01','TC-STAT-02']);
+  const saved=JSON.stringify({row,executions:database.lesaka_uat_executions});assert(!saved.includes(pin));assert(!saved.includes('stage-private'));assert(!saved.includes('Authorization'));
+ }
+});
+test('customer tests reject unknown stock and consumed vouchers without calling redemption',async()=>{
+ await customerSetup();database.lesaka_uat_inventory=[];let calls=mockGateway();let result=await checkout();assert.equal(result.status,409);assert.equal(calls.length,0);assert.equal(database.lesaka_uat_customer_attempts[0].outcome,'rejected');
+ await customerSetup();calls=mockGateway();globalThis.fetch=async(url,init)=>url.includes('checkout-eligibility')?Response.json({billing:{locked:false},plan:{other_payment_types_enabled:true},methods:{kazang:{enabled:true}}}):Response.json(response(JSON.parse(init.body).clientReference,false,{status:'Consumed',remainingAmount:0}));
+ result=await checkout();assert.equal(result.status,409);assert(result.body.error.includes('already been used'));assert.equal(database.lesaka_voucher_attempts.length,0);assert.equal(database.lesaka_uat_customer_attempts[0].outcome,'rejected');
+});
+test('customer retries retain the original voucher reference and cycle after an uncertain redemption',async()=>{
+ await customerSetup();let references=[];mockGateway(body=>{references.push(body.clientReference);throw new Error('network interrupted');});
+ assert.equal((await checkout()).status,502);assert.equal(database.lesaka_uat_customer_attempts[0].outcome,'uncertain');
+ database.lesaka_uat_campaigns[0].customer_cycle=3;
+ mockGateway(body=>{references.push(body.clientReference);return Response.json(response(body.clientReference,true));});
+ const retry=await checkout();assert.equal(retry.body.status,'tested');assert.equal(references[0],references[1]);assert.equal(database.lesaka_uat_customer_attempts[1].cycle,2);assert.equal(database.transactions[0].status,'pending');
+});
+test('expired customer sessions and production test checkouts cannot bypass the staging gates',async()=>{
+ await customerSetup();database.lesaka_uat_campaigns[0].customer_until='2000-01-01';let calls=mockGateway();assert.equal((await checkout()).status,403);assert.equal(calls.length,0);
+ setup();database.transactions[0].is_test=true;calls=mockGateway();assert.equal((await checkout()).status,409);assert.equal(calls.length,0);
+});
+
+test('a business can test in staging while the platform default is production',async()=>{
+ await customerSetup();environment.LESAKA_4ALL_ENVIRONMENT='production';
+ database.lesaka_integration_modes.push({merchant_id:'merchant',environment:'staging',production_approved_at:null});
+ const calls=mockGateway();const result=await checkout();assert.equal(result.body.status,'tested');
+ assert(calls.filter(c=>c.url.includes('/voucher/')).every(c=>c.url.startsWith('https://staging.bridge.lesaka.tech/')));assert.equal(database.transactions[0].status,'pending');
 });

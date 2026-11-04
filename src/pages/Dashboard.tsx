@@ -154,6 +154,7 @@ const Dashboard = () => {
         const { data: transactions, error: transError } = await supabase
           .from("transactions")
           .select("*")
+          .eq("is_test", false)
           .eq("merchant_id", merchant.merchant_id)
           .order("created_at", { ascending: false });
 

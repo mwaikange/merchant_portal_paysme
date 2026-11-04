@@ -17,6 +17,7 @@ import BulkSubscribers from "./pages/BulkSubscribers";
 import Subscriptions from "./pages/Subscriptions";
 import KYC from "./pages/KYC";
 import ApiIntegration from "./pages/ApiIntegration";
+import LesakaTesting from "./pages/LesakaTesting";
 import QrPaymentLinks from "./pages/QrPaymentLinks";
 import HostedPayment from "./pages/HostedPayment";
 import HostedBasketPayment from "./pages/HostedBasketPayment";
@@ -100,6 +101,7 @@ const App = () => (
               <Route path="/portal/subscriptions" element={<PortalBrand><Subscriptions /></PortalBrand>} />
               <Route path="/portal/kyc" element={<PortalBrand><KYC /></PortalBrand>} />
               <Route path="/portal/api-integration" element={<PortalBrand><ApiIntegration /></PortalBrand>} />
+              <Route path="/portal/api-integration/lesaka-tests" element={<PortalBrand><LesakaTesting /></PortalBrand>} />
               <Route path="/portal/qr-payment-links" element={<PortalBrand><QrPaymentLinks /></PortalBrand>} />
               <Route path="/portal/profile" element={<PortalBrand><Profile /></PortalBrand>} />
               <Route path="/portal/tax-settings" element={<PortalBrand><TaxSettings /></PortalBrand>} />

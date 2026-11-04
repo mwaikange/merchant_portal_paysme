@@ -82,7 +82,7 @@ export function scrubUat(value: unknown, secrets: string[] = [], depth = 0): unk
     return result.replace(/\b(?:\d[ -]?){16,}\b/g, "[REDACTED]").replace(/Basic\s+[A-Za-z0-9+/=]+/gi, "Basic [REDACTED]");
   }
   if (Array.isArray(value)) return value.slice(0, 50).map(item => scrubUat(item, secrets, depth + 1));
-  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).slice(0, 80).map(([key, item]) => [key, /^(pin|password|username|authorization|encrypted_pin|encrypted_credentials|api_key)$/i.test(key) ? "[REDACTED]" : scrubUat(item, secrets, depth + 1)]));
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).slice(0, 80).map(([key, item]) => [key, /^(pin|password|username|api_password|api_username|authorization|encrypted_pin|encrypted_credentials|api_key)$/i.test(key) ? "[REDACTED]" : scrubUat(item, secrets, depth + 1)]));
   return value;
 }
 export function evaluateUat(test: UatCase, http: number, data: Record<string, unknown>, reference: string, expectedMinor?: number): { verdict: Verdict; reason: string } {

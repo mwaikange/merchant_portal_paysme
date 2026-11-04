@@ -25,7 +25,7 @@ import {
 } from "@/lib/merchantQrLinks";
 import { QrEmailDialog } from "@/components/QrEmailDialog";
 import { LesakaCredentialsForm } from "@/components/LesakaCredentialsForm";
-import { LesakaUatPanel } from "@/components/LesakaUatPanel";
+
 
 // Form validation schema
 const productFormSchema = z.object({
@@ -1276,7 +1276,7 @@ const ApiIntegration = () => {
               </Card>
             </div>
           </div>
-          {merchant && <LesakaUatPanel merchantId={merchant.merchant_id} />}
+
         </div>
       </div>
     </ProtectedRoute>;

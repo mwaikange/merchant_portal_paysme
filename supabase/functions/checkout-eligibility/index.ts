@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { lesakaPlatformConfig, LESAKA_PENDING_MESSAGE } from "../_shared/lesaka-4all.ts";
+import { merchantLesakaEnv, customerUatSession } from "../_shared/lesaka-integration-mode.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -266,13 +267,16 @@ Deno.serve(async (req) => {
       },
     };
 
-    const lesakaPlatform = lesakaPlatformConfig(key => Deno.env.get(key));
+    const lesakaMode = await merchantLesakaEnv(supabase, merchant.merchant_id, key => Deno.env.get(key));
+    const lesakaPlatform = lesakaPlatformConfig(lesakaMode.env);
+    let customerTesting = false;
     let lesakaCredentialsPresent = false;
     if (lesakaPlatform) {
       const { data: credentials, error: credentialsError } = await supabase.from("lesaka_merchant_credentials")
         .select("credential_version").eq("merchant_id", merchant.merchant_id).eq("environment", lesakaPlatform.environment).maybeSingle();
       if (credentialsError) throw new Error("Lesaka readiness could not be checked");
       lesakaCredentialsPresent = Boolean(credentials);
+      if (credentials && lesakaPlatform.environment === "staging") customerTesting = Boolean(await customerUatSession(supabase, merchant.merchant_id, credentials.credential_version, lesakaMode.env));
     }
 
     for (const key of customerFacilitatorKeys) {
@@ -287,7 +291,7 @@ Deno.serve(async (req) => {
       );
       // Staging is available only through server-authorized UAT calls, never
       // offered to real customers by hosted checkout or the browser SDK.
-      const lesakaReady = key !== "kazang" || lesakaPlatform?.environment === "production";
+      const lesakaReady = key !== "kazang" || lesakaPlatform?.environment === "production" || customerTesting;
       const enabled = Boolean(planRule.other_payment_types_enabled && hasCode && merchantEnabled && facilitator?.status !== "rejected" && wayameVerified && lesakaReady);
       methods[key] = {
         enabled,

@@ -1339,6 +1339,9 @@ export type Database = {
       }
       transactions: {
         Row: {
+          is_test: boolean
+          test_provider: string | null
+          test_session_id: string | null
           allowed_payment_methods: string[]
           amount: number
           amount_paid: number | null
@@ -1376,6 +1379,9 @@ export type Database = {
           vendor_redeemable: boolean
         }
         Insert: {
+          is_test?: boolean
+          test_provider?: string | null
+          test_session_id?: string | null
           allowed_payment_methods?: string[]
           amount: number
           amount_paid?: number | null
@@ -1413,6 +1419,9 @@ export type Database = {
           vendor_redeemable?: boolean
         }
         Update: {
+          is_test?: boolean
+          test_provider?: string | null
+          test_session_id?: string | null
           allowed_payment_methods?: string[]
           amount?: number
           amount_paid?: number | null

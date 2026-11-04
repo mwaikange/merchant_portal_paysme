@@ -1,10 +1,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { decryptLesakaCredentials } from "../_shared/lesaka-credential-storage.ts";
 import { pinFingerprint } from "../_shared/lesaka-4all.ts";
-import { parseUatInventory, scrubUat } from "../_shared/lesaka-uat.ts";
+import { parseUatInventory, scrubUat, LESAKA_UAT_CASES, needsFixture } from "../_shared/lesaka-uat.ts";
 import { encryptUatPin, uatState, UatError, uuid, type Campaign } from "../_shared/lesaka-uat-store.ts";
 import { runUat } from "../_shared/lesaka-uat-runner.ts";
 import { inspectUatSerial } from "../_shared/lesaka-uat-inspect.ts";
+import { merchantLesakaEnv } from "../_shared/lesaka-integration-mode.ts";
 const env = (key: string) => Deno.env.get(key) || "";
 const admin = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"));
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
@@ -29,7 +30,8 @@ Deno.serve(async req => {
       const access = await caller.rpc("merchant_portal_allowed", { p_merchant_id: body.merchant_id, p_permission: "api" });
       if (access.error || access.data !== true) throw new UatError("Merchant API access is required.", 403);
     }
-    const allowed = env("LESAKA_UAT_ENABLED") === "true" && env("LESAKA_4ALL_ENVIRONMENT") === "staging" && body.merchant_id === env("LESAKA_UAT_MERCHANT_ID");
+    const merchantMode = await merchantLesakaEnv(admin,body.merchant_id,env);
+    const allowed = env("LESAKA_UAT_ENABLED") === "true" && merchantMode.environment === "staging";
     if (!allowed) {
       if (body.action === "status") return json({ ok: true, enabled: false });
       throw new UatError("The private staging recorder is not enabled for this merchant.", 403);
@@ -56,6 +58,35 @@ Deno.serve(async req => {
     if (body.action === "status" || body.action === "create") return json({ ok: true, enabled: true, credentials_current: !campaign || campaign.credential_version === setup.data.credential_version, ...(await uatState(admin, campaign)) });
     if (!campaign) throw new UatError("Create the three-cycle campaign first.", 409);
     if (campaign.credential_version !== setup.data.credential_version) throw new UatError("Credentials changed. Create a new campaign before continuing.", 409);
+    if (body.action === "customer_session") {
+      const cycle=Number(body.cycle);
+      if(typeof body.enabled!=="boolean"||!Number.isInteger(cycle)||cycle<1||cycle>3)throw new UatError("Choose cycle 1, 2 or 3.");
+      if(body.enabled&&!campaign.inventory_sha256)throw new UatError("Import this business's test voucher file first.",409);
+      const result=await admin.from("lesaka_uat_campaigns").update({customer_cycle:cycle,customer_until:body.enabled?new Date(Date.now()+86400000).toISOString():null}).eq("id",campaign.id).select("*").single();
+      if(result.error)throw new UatError("Customer testing could not be updated.",503);
+      return json({ok:true,enabled:true,...(await uatState(admin,result.data))});
+    }
+    if (body.action === "purge") {
+      if(body.confirm!==campaign.id||body.exported!==true)throw new UatError("Download the evidence and confirm this campaign before deleting it.");
+      const result=await admin.rpc("purge_lesaka_uat_campaign",{p_campaign:campaign.id,p_merchant:merchantId});
+      if(result.error)throw new UatError("Stop customer testing and resolve running or uncertain results before cleanup.",409);
+      return json({ok:true,enabled:true,campaign:null,inventory:[],executions:[],customer_attempts:[]});
+    }
+    if(body.action === "auto_step") {
+      const test=LESAKA_UAT_CASES.find(t=>t.id===body.case_id&&/^TC-(STAT|RED|EDGE)-/.test(t.id));
+      const cycle=Number(body.cycle);
+      if(!test||cycle<1||cycle>3||!Number.isInteger(cycle)||!uuid(body.execution_id)||body.confirm_redemption!==true)throw new UatError("Confirm the automated cycle before starting.");
+      const snapshot=await uatState(admin,campaign);
+      const history=snapshot.executions as Array<{id:string;cycle:number;case_id:string;fixture_id:string;verdict:string;evidence:Array<{operation:string;http_status:number;response:Record<string,unknown>}>}>;
+      const existing=history.filter(e=>e.cycle===cycle&&e.case_id===test.id).at(-1);
+      if(existing)return json({ok:true,execution:existing});
+      const inventory=snapshot.inventory as Array<{id:string;allocation:string;value_minor:number;observed_state:string;locked_by:string|null}>;
+      const replay=test.input==="replay"?history.find(e=>e.cycle===cycle&&e.case_id==="TC-RED-01"&&e.verdict==="pass"):null;
+      const state=test.state||test.precondition||"Active";
+      const fixture=inventory.find(f=>f.allocation==="automated"&&!f.locked_by&&(!test.amountMinor||f.value_minor===test.amountMinor)&&(replay?f.id===replay.fixture_id:f.observed_state===state||state==="Active"&&!f.observed_state));
+      const request={...body,mode:"automated",fixture_id:fixture?.id||null,replay_of:replay?.id||null,fixture_unavailable:needsFixture(test)&&(!fixture||test.input==="replay"&&!replay)};
+      return json({ok:true,execution:await runUat(request,{admin,campaign,setup:setup.data,userId,service:true,env:key=>merchantMode.env(key)||""})});
+    }
     if (body.action === "inspect") {
       // Discovery is read-only, including the reserved half. Redemption keeps
       // its existing allocation restrictions in runUat.
@@ -75,7 +106,8 @@ Deno.serve(async req => {
       if (typeof body.file_base64 !== "string" || body.file_base64.length > 150000) throw new UatError("Choose the supplied voucher text file.");
       const bytes = Uint8Array.from(atob(body.file_base64), ch => ch.charCodeAt(0));
       const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), byte => byte.toString(16).padStart(2, "0")).join("");
-      if (!env("LESAKA_UAT_INVENTORY_SHA256") || hash !== env("LESAKA_UAT_INVENTORY_SHA256")) throw new UatError("Choose the original approved voucher file. Ordering and the reserved half must remain unchanged.", 409);
+      const approvedHash=merchantMode.inventoryHash||(merchantId===env("LESAKA_UAT_MERCHANT_ID")?env("LESAKA_UAT_INVENTORY_SHA256"):hash);
+      if (!approvedHash || hash !== approvedHash) throw new UatError("Choose the original approved voucher file. Ordering and the reserved half must remain unchanged.", 409);
       const parsed = parseUatInventory(new TextDecoder().decode(bytes));
       const items = [];
       for (const fixture of parsed) {
@@ -97,7 +129,7 @@ Deno.serve(async req => {
       return json({ ok: true, enabled: true, ...(await uatState(admin, campaign)) });
     }
     if (body.action !== "run") throw new UatError("Unknown action.");
-    return json({ ok: true, execution: await runUat(body, { admin, campaign, setup: setup.data, userId, service, env }) });
+    return json({ ok: true, execution: await runUat(body, { admin, campaign, setup: setup.data, userId, service, env:key=>merchantMode.env(key)||"" }) });
   } catch (error) {
     if (error instanceof UatError) return json({ ok: false, error: error.message }, error.status);
     // DB and provider details can echo PINs or credentials. Never log raw errors.
