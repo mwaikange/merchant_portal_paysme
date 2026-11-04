@@ -12,6 +12,12 @@ Save this business's staging credentials in its Lesaka card, open **Lesaka stagi
 - **Manual portal tests:** choose a required Excel ID and run the case. Blank and too-long-PIN cases generate controlled invalid requests; normal checkout still accepts exactly 16 digits. The optional 15-digit website-guide case is available separately.
 - **Automatic tests:** run the 18 required Excel cases that have not passed. Automation uses only its allocated half, blocks cases lacking suitable fixtures and stops for uncertain outcomes.
 
+## Dedicated technical checks
+
+Choose **Technical checks** for valid-serial enquiries, unknown PIN/serial, blank PIN/serial, too-long PIN and blank/unknown redemption inputs. Run a selected case, all eight technical workbook cases for the selected cycle, or all three cycles. Passed results are reused; new requests receive their own cycle, client reference and captured response. The optional 15-digit case is also available but does not change the Excel completion requirement.
+
+This route is restricted server-side to serial enquiries and fixed synthetic inputs. It cannot redeem a supplied voucher, even if a caller submits a real-redemption case ID. Normal payment-modal and hosted-checkout validation stays strict. The other voucher cases remain available through normal checkout and manual portal tests.
+
 ## Pass criteria
 
 A case passes when its captured result matches the Excel's business outcome. Equivalent vocabulary is displayed explicitly: **New = Active**, **Redeemed = Consumed**, **Spoilt = Reversed**. Valid PIN/serial validation errors do not require the website guide's extra business code 5005. An explicit supplier response saying **Voucher is not in a redeemable state** satisfies a matching negative redemption case; its actual HTTP status and business code remain visible in the evidence.
@@ -20,7 +26,7 @@ The recorder reassesses already captured responses without sending more voucher 
 
 ## Submission
 
-Each cycle shows **Excel: x/18 passed**. When all three reach 18/18, the results are ready to download and submit. **Download Excel** includes a cover, Status and Redemption tabs for each cycle with the supplier's original case IDs, descriptions, prerequisites, steps and expected-result columns, followed by Actual Result, Client Reference and Pass/Fail. Separate supporting tabs retain optional checks, customer attempts and redacted technical evidence, including receipt IDs and trace IDs. CSV and full JSON remain available.
+Each cycle shows **Excel: x/18 passed**. When all three reach 18/18, the results are ready to download and submit. **Download Excel** includes a cover, Status and Redemption tabs for each cycle with the supplier's original case IDs, descriptions, prerequisites, steps and expected-result columns, followed by Actual Result, Client Reference and Pass/Fail. Separate supporting tabs retain optional checks, customer attempts and redacted technical evidence, including receipt IDs and trace IDs. CSV and full JSON remain available. **Download required Excel cases CSV** is an additional submission export containing only the original 18 Excel IDs for each of three cycles (54 rows), with expected/actual results, references and pass/fail; optional website-guide cases are excluded.
 
 Expired, reversed and unsupported-product fixtures are still needed for their corresponding Excel IDs. A cancelled-voucher scenario from the website is optional and does not replace a reversed-voucher Excel test.
 

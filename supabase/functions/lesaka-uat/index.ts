@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { decryptLesakaCredentials } from "../_shared/lesaka-credential-storage.ts";
 import { pinFingerprint } from "../_shared/lesaka-4all.ts";
-import { parseUatInventory, scrubUat, LESAKA_UAT_CASES, WORKBOOK_CASE_IDS, needsFixture } from "../_shared/lesaka-uat.ts";
+import { parseUatInventory, scrubUat, LESAKA_UAT_CASES, WORKBOOK_CASE_IDS, isTechnicalUatCase, needsFixture } from "../_shared/lesaka-uat.ts";
 import { encryptUatPin, uatState, UatError, uuid, type Campaign } from "../_shared/lesaka-uat-store.ts";
 import { runUat } from "../_shared/lesaka-uat-runner.ts";
 import { inspectUatSerial } from "../_shared/lesaka-uat-inspect.ts";
@@ -72,10 +72,12 @@ Deno.serve(async req => {
       if(result.error)throw new UatError("Stop customer testing and resolve running or uncertain results before cleanup.",409);
       return json({ok:true,enabled:true,campaign:null,inventory:[],executions:[],customer_attempts:[]});
     }
-    if(body.action === "auto_step") {
-      const test=LESAKA_UAT_CASES.find(t=>t.id===body.case_id&&WORKBOOK_CASE_IDS.has(t.id));
+    if(body.action === "auto_step" || body.action === "technical_step") {
+      const technical=body.action==="technical_step";
+      if(technical&&!isTechnicalUatCase(body.case_id))throw new UatError("Choose a serial enquiry or controlled invalid-input technical check.");
+      const test=LESAKA_UAT_CASES.find(t=>t.id===body.case_id&&(technical?isTechnicalUatCase(t.id):WORKBOOK_CASE_IDS.has(t.id)));
       const cycle=Number(body.cycle);
-      if(!test||cycle<1||cycle>3||!Number.isInteger(cycle)||!uuid(body.execution_id)||body.confirm_redemption!==true)throw new UatError("Confirm the automated cycle before starting.");
+      if(!test||cycle<1||cycle>3||!Number.isInteger(cycle)||!uuid(body.execution_id)||!technical&&body.confirm_redemption!==true)throw new UatError("Confirm the automated cycle before starting.");
       const snapshot=await uatState(admin,campaign);
       const history=snapshot.executions as Array<{id:string;cycle:number;case_id:string;fixture_id:string;verdict:string;evidence:Array<{operation:string;http_status:number;response:Record<string,unknown>}>}>;
       const existing=history.filter(e=>e.cycle===cycle&&e.case_id===test.id).at(-1);
@@ -84,7 +86,7 @@ Deno.serve(async req => {
       const replay=test.input==="replay"?history.find(e=>e.cycle===cycle&&e.case_id==="TC-RED-01"&&e.verdict==="pass"):null;
       const state=test.state||test.precondition||"Active";
       const fixture=inventory.find(f=>f.allocation==="automated"&&!f.locked_by&&(!test.amountMinor||f.value_minor===test.amountMinor)&&(replay?f.id===replay.fixture_id:f.observed_state===state||state==="Active"&&!f.observed_state));
-      const request={...body,mode:"automated",fixture_id:fixture?.id||null,replay_of:replay?.id||null,fixture_unavailable:needsFixture(test)&&(!fixture||test.input==="replay"&&!replay)};
+      const request={...body,confirm_redemption:technical?true:body.confirm_redemption,mode:"automated",fixture_id:fixture?.id||null,replay_of:replay?.id||null,fixture_unavailable:needsFixture(test)&&(!fixture||test.input==="replay"&&!replay)};
       return json({ok:true,execution:await runUat(request,{admin,campaign,setup:setup.data,userId,service:true,env:key=>merchantMode.env(key)||""})});
     }
     if (body.action === "inspect") {

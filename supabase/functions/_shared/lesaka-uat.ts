@@ -42,6 +42,9 @@ export const LESAKA_UAT_CASES: UatCase[] = [
 ];
 for (const row of LESAKA_WORKBOOK_ROWS) { const test=LESAKA_UAT_CASES.find(item=>item.id===row.id)!; test.expected=row.expected; delete test.review; }
 export const LESAKA_REQUIRED_CASES = LESAKA_UAT_CASES.filter(test=>WORKBOOK_CASE_IDS.has(test.id));
+export const LESAKA_TECHNICAL_CASE_IDS = ["TC-VS-002","TC-VS-006","TC-VS-007","TC-VS-008","TC-VS-009","TC-VS-010","TC-VR-006","TC-VR-007"];
+export const LESAKA_TECHNICAL_CASES = LESAKA_REQUIRED_CASES.filter(test=>LESAKA_TECHNICAL_CASE_IDS.includes(test.id));
+export function isTechnicalUatCase(id:unknown){return typeof id==="string"&&(LESAKA_TECHNICAL_CASE_IDS.includes(id)||id==="TC-EDGE-02");}
 export type Verdict = "running" | "pass" | "fail" | "review" | "blocked" | "uncertain" | "error";
 export type InventoryItem = { fixture_id: string; value_minor: number; serial_number: string; pin: string; allocation: "automated" | "manual"; source_line: number };
 export function parseUatInventory(text: string): InventoryItem[] {
@@ -93,7 +96,7 @@ export function evaluateUat(test: UatCase, http: number, data: Record<string, un
   const workbook=WORKBOOK_CASE_IDS.has(test.id),code=Number(data.errorCode??data.status),detail=String(data.detail||data.message||data.title||"");
   const denial=http>=400&&[5001,5006,5008].includes(code)&&/not.*redeemable|not.*valid.*redemption|product.*not.*available|unsupported|redemption.*not.*allowed/i.test(detail);
   if(denial) return {verdict:workbook&&["TC-VR-003","TC-VR-004","TC-VR-005","TC-VR-006","TC-VR-008"].includes(test.id)?"pass":workbook?"fail":"review",reason:`Explicit supplier rejection: ${detail} (HTTP ${http}, business code ${code}).`};
-  if(workbook&&["TC-VS-008","TC-VS-009","TC-VS-010","TC-VR-007"].includes(test.id)&&http===400){
+  if((workbook&&["TC-VS-008","TC-VS-009","TC-VS-010","TC-VR-007"].includes(test.id)||test.id==="TC-EDGE-02")&&http===400){
     const field=test.id==="TC-VS-009"?"serialnumber":"pin";
     const errors=data.errors&&typeof data.errors==="object"?data.errors as Record<string,unknown>:{};
     if(Object.keys(errors).some(key=>key.toLowerCase()===field))return {verdict:"pass",reason:`Expected ${field==="pin"?"PIN length":"serial number"} validation rejection received (HTTP 400). ${JSON.stringify(errors)}`};

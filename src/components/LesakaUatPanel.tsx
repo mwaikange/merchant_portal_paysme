@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { uatWorkbook } from "@/lib/uatWorkbook";
-import { LESAKA_UAT_CASES, LESAKA_REQUIRED_CASES, LESAKA_WORKBOOK_ROWS, WORKBOOK_CASE_IDS, needsFixture } from "../../supabase/functions/_shared/lesaka-uat";
+import { LESAKA_UAT_CASES, LESAKA_REQUIRED_CASES, LESAKA_TECHNICAL_CASES, LESAKA_WORKBOOK_ROWS, WORKBOOK_CASE_IDS, needsFixture } from "../../supabase/functions/_shared/lesaka-uat";
 
 type Fixture = { id: string; fixture_id: string; value_minor: number; serial_number: string; allocation: "automated" | "manual"; source_line: number; observed_state: string | null; locked_by: string | null };
 type Evidence = { operation: string; client_reference: string; requested_at: string; finished_at: string | null; http_status: number; request: unknown; response: Record<string, unknown> };
@@ -30,7 +30,8 @@ export function LesakaUatPanel({ merchantId, apiKey }: { merchantId: string; api
   const [mode, setMode] = useState<"manual" | "automated">("manual"), [fixtureId, setFixtureId] = useState("");
   const [pin, setPin] = useState(""), [confirmed, setConfirmed] = useState(false), [replayOf, setReplayOf] = useState("");
   const [note, setNote] = useState("");
-  const [view,setView]=useState<"customer"|"manual"|"auto">("customer"),[exported,setExported]=useState(false),[autoConfirmed,setAutoConfirmed]=useState(false),[checkoutAmount,setCheckoutAmount]=useState("10");
+  const [view,setView]=useState<"customer"|"manual"|"auto"|"technical">("customer"),[exported,setExported]=useState(false),[autoConfirmed,setAutoConfirmed]=useState(false),[checkoutAmount,setCheckoutAmount]=useState("10");
+  const [technicalCase,setTechnicalCase]=useState("TC-VS-002");
   const invoke = useCallback(async (action: string, extra: Record<string, unknown> = {}) => {
     const result = await supabase.functions.invoke("lesaka-uat", { body: { action, merchant_id: merchantId, ...extra } });
     if (result.error) {
@@ -85,12 +86,20 @@ export function LesakaUatPanel({ merchantId, apiKey }: { merchantId: string; api
       await invoke("run", { campaign_id: state.campaign?.id, execution_id: id, case_id: resume?.case_id || caseId, cycle: resume?.cycle || cycle, fixture_id: resume?.fixture_id || fixtureId || null, mode: resume?.actor_kind || mode, pin, confirm_redemption: confirmed, replay_of: resume?.replay_of || replayOf || null });
     } finally { setPin(""); setConfirmed(false); await refresh(); }
   });
-  const exportReport = (format: "json" | "csv" | "xlsx") => {
+  const technicalRun=(cycles:number[],ids:string[])=>work(async()=>{
+    for(const testCycle of cycles)for(const id of ids){const result=await invoke("technical_step",{campaign_id:state.campaign?.id,cycle:testCycle,case_id:id,execution_id:crypto.randomUUID()});await refresh();if(["uncertain","running","error"].includes(result.execution?.verdict))return;}
+  });
+  const exportReport = (format: "json" | "csv" | "xlsx" | "required-csv") => {
     const checks = [1, 2, 3].flatMap(number => requiredCases.map(item => ({ cycle: number, case_id: item.id, title: item.title, expected: item.expected, latest_verdict: latest.get(`${number}:${item.id}`)?.verdict || "pending" })));
     const report = { environment: "staging", exported_at: new Date().toISOString(), campaign: state.campaign, cycles: summary, all_three_workbook_cycles_passed: summary.every(s => s.workbook_passed === requiredCases.length), all_three_cycles_passed: summary.every(s => s.workbook_passed === requiredCases.length), cases: requiredCases, optional_cases: LESAKA_UAT_CASES.filter(item=>!WORKBOOK_CASE_IDS.has(item.id)), checklist: checks, inventory: state.inventory, executions: state.executions, customer_attempts:state.customer_attempts };
     const filename = `Lesaka-UAT-${state.campaign?.id || "checklist"}`;
     setExported(true);
     if (format === "json") return download(filename + ".json", JSON.stringify(report, null, 2), "application/json");
+    if(format==="required-csv"){
+      const columns=["Cycle","Worksheet","Test Case ID","Description","Pre-conditions","Test Steps","Expected Result","Actual Result","Client Reference","Pass / Fail","Lesaka receipt IDs","Trace IDs"];
+      const requiredRows=[1,2,3].flatMap(number=>LESAKA_WORKBOOK_ROWS.map(row=>{const run=latest.get(`${number}:${row.id}`);return [number,row.id.startsWith("TC-VS-")?"Voucher Status Check":"Voucher Redemption",row.id,row.description,row.preconditions,row.steps,row.expected,run?.reason||"Not run",run?.client_reference||"",run?label(run.verdict):"Not run",run?providerIds(run,"id").join("; "):"",run?providerIds(run,"traceId").join("; "):""];}));
+      return download(filename+"-Required-Excel-Cases.csv","\uFEFF"+[columns,...requiredRows].map(row=>row.map(csvCell).join(",")).join("\r\n"),"text/csv;charset=utf-8");
+    }
     const header = ["Cycle", "Case", "Title", "Expected", "Verdict", "Execution ID", "Started UTC", "Finished UTC", "Client reference", "Lesaka receipt IDs", "Trace IDs", "Actor", "Voucher", "Reason", "Request/response evidence", "Manual observations"];
     const rows = checks.flatMap(check => {
       const selected=latest.get(`${check.cycle}:${check.case_id}`);const runs=selected?[selected]:[];
@@ -117,6 +126,7 @@ export function LesakaUatPanel({ merchantId, apiKey }: { merchantId: string; api
       <Button type="button" variant="outline" disabled={busy} onClick={() => work(refresh)}><RefreshCw className="mr-2 h-4 w-4" />Refresh results</Button>
       <Button type="button" disabled={!state.campaign || busy} onClick={() => exportReport("xlsx")}><Download className="mr-2 h-4 w-4" />Download Excel</Button>
       <Button type="button" variant="outline" disabled={!state.campaign || busy} onClick={() => exportReport("csv")}><Download className="mr-2 h-4 w-4" />Download results CSV</Button>
+      <Button type="button" variant="outline" disabled={!state.campaign || busy} onClick={() => exportReport("required-csv")}><Download className="mr-2 h-4 w-4" />Download required Excel cases CSV</Button>
       <Button type="button" variant="outline" disabled={!state.campaign || busy} onClick={() => exportReport("json")}>Download full evidence JSON</Button>
     </div>
     {error && <p role="alert" className="rounded-md border border-red-400/40 p-3 text-sm text-red-200">{error}</p>}
@@ -131,10 +141,12 @@ export function LesakaUatPanel({ merchantId, apiKey }: { merchantId: string; api
         }} />
         <p className="text-xs text-white/70">The first half of each value is allocated to automation. The remaining half is reserved for your manual tests; its PINs are not stored.</p>
       </div>}
-      <div className="grid grid-cols-3 gap-2" aria-label="Test cycles">{summary.map(s => <button key={s.cycle} type="button" aria-pressed={cycle === s.cycle} data-state={cycle === s.cycle ? "active" : "inactive"} disabled={busy} onClick={() => { setCycle(s.cycle); setPin(""); setConfirmed(false); }} className={`rounded-md border p-3 text-left ${cycle === s.cycle ? "border-yellow-400 bg-yellow-400/10" : "border-white/15"}`}><strong>Cycle {s.cycle}</strong><span className="mt-1 block text-xs">Excel: {s.workbook_passed}/{requiredCases.length} passed · {s.workbook_recorded} recorded</span></button>)}</div>
+      <h4 className="font-semibold">Excel pass statistics</h4>
+      <div className="grid grid-cols-3 gap-2" aria-label="Test cycles">{summary.map(s => <button key={s.cycle} type="button" aria-pressed={cycle === s.cycle} data-state={cycle === s.cycle ? "active" : "inactive"} disabled={busy} onClick={() => { setCycle(s.cycle); setPin(""); setConfirmed(false); }} className={`rounded-md border p-3 text-left ${cycle === s.cycle ? "border-yellow-400 bg-yellow-400/10" : "border-white/15"}`}><strong>Cycle {s.cycle}</strong><span className="mt-1 block text-xs">Excel: {s.workbook_passed}/{requiredCases.length} passed · {s.workbook_recorded} recorded</span><span className="mt-1 block text-xs">Technical: {LESAKA_TECHNICAL_CASES.filter(item=>latest.get(`${s.cycle}:${item.id}`)?.verdict==="pass").length}/{LESAKA_TECHNICAL_CASES.length} passed</span></button>)}</div>
       <p className="text-xs text-white/65">Only the supplied Excel workbook is required: 10 Voucher Status Check cases and 8 Voucher Redemption cases in each of three cycles. Equivalent API labels and matching validation errors count as passes. Optional website-guide cases do not block submission.</p>
       <p role="status" className="text-sm font-semibold text-yellow-200">{summary.every(s=>s.workbook_passed===18)?"All three Excel cycles passed - ready to download and submit to Lesaka.":"Submission is ready when each cycle shows 18/18 Excel cases passed. Missing fixtures and genuinely unmatched results remain incomplete."}</p>
-      <div className="flex flex-wrap gap-2" aria-label="Testing method">{([['customer','Payment modal / hosted page'],['manual','Manual portal tests'],['auto','Automatic tests']] as const).map(([value,title])=><Button key={value} type="button" aria-pressed={view===value} disabled={busy} onClick={()=>setView(value)} variant={view===value?'default':'outline'}>{title}</Button>)}</div>
+      <div className="flex flex-wrap gap-2" aria-label="Testing method">{([['customer','Payment modal / hosted page'],['manual','Manual portal tests'],['technical','Technical checks'],['auto','Automatic tests']] as const).map(([value,title])=><Button key={value} type="button" aria-pressed={view===value} disabled={busy} onClick={()=>setView(value)} variant={view===value?'default':'outline'}>{title}</Button>)}</div>
+      {view==="technical"&&<div className="space-y-4 rounded-md border border-yellow-400/30 p-4"><h4 className="font-semibold">Technical checks · Cycle {cycle}</h4><p className="text-sm text-white/75">Run the checks that normal checkout deliberately prevents: serial enquiries, unknown PIN/serial, blank PIN/serial and invalid PIN length. These use a read-only serial enquiry or fixed synthetic inputs; they never redeem a supplied voucher. Each result is recorded separately for its cycle.</p><Label htmlFor="lesaka-technical-case">Technical test</Label><select id="lesaka-technical-case" value={technicalCase} disabled={busy} onChange={e=>setTechnicalCase(e.target.value)} className="h-10 w-full rounded-md border bg-[#1b211c] px-2 text-sm">{LESAKA_TECHNICAL_CASES.map(item=><option key={item.id} value={item.id}>{item.id} · {item.title}</option>)}<option value="TC-EDGE-02">Optional · too-short PIN (15 digits)</option></select><div className="flex flex-wrap gap-2"><Button type="button" disabled={busy||!state.campaign.inventory_sha256} onClick={()=>technicalRun([cycle],[technicalCase])}>Run selected technical check</Button><Button type="button" variant="outline" disabled={busy||!state.campaign.inventory_sha256} onClick={()=>technicalRun([cycle],LESAKA_TECHNICAL_CASES.map(item=>item.id))}>Complete technical checks · Cycle {cycle}</Button><Button type="button" variant="outline" disabled={busy||!state.campaign.inventory_sha256} onClick={()=>technicalRun([1,2,3],LESAKA_TECHNICAL_CASES.map(item=>item.id))}>Complete technical checks · all 3 cycles</Button></div><p className="text-xs text-white/65">Passed checks are reused. Each new check captures a fresh client reference and provider response. Real voucher-redemption tests remain available for you in the payment modal, hosted page and manual portal tabs.</p></div>}
       {view === "customer" && <div className="space-y-4 rounded-md border border-yellow-400/30 p-4">
         <h4 className="text-base font-semibold">Test as a customer</h4>
         <p className="text-sm text-white/75">Start a cycle, open the checkout, and enter only the voucher PIN as a customer would. PaySME matches its serial number and records the results here automatically.</p>

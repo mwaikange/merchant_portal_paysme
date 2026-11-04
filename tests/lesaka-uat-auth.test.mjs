@@ -31,3 +31,8 @@ test('inventory source hash is mandatory, and manual PINs never enter database i
  const items=imported.args.p_items;assert.equal(items[0].allocation,'automated');assert(items[0].encrypted_pin.ciphertext);assert.equal(items[1].allocation,'manual');assert.equal(items[1].encrypted_pin,null);
  const json=JSON.stringify(items);assert(!json.includes('0123456789012345'));assert(!json.includes('0123456789012346'));
 });
+
+test('technical endpoint refuses real voucher-redemption case IDs',async()=>{
+ const result=await invoke({action:'technical_step',case_id:'TC-VR-001',cycle:2,execution_id:crypto.randomUUID()},'server-secret');
+ assert.equal(result.http,400);assert.match(result.body.error,/serial enquiry or controlled invalid-input/);
+});
