@@ -1,6 +1,6 @@
 # PaySME Payment Modal — API Integration Guide
 
-**Version:** 1.12.0 · **Updated:** 3 November 2026
+**Version:** 1.13.0 · **Updated:** 4 November 2026
 **Audience:** Merchants integrating PaySME payments on web, mobile, or server-side.
 
 ---
@@ -91,6 +91,7 @@ The implementer should not ask the merchant for facilitator credentials. Those a
 | v1.11.0 | Added the voucher payment option, merchant-controlled checkout eligibility, and failed-payment retry routing. |
 | v1.11.1 | Updated the Lesaka artwork and lime-green button, and corrected the customer flow to use the receipt's 16-digit voucher PIN. |
 | v1.12.0 | Added merchant-specific Lesaka username/password setup, encrypted credential storage, server-verified 4All voucher status and full redemption in NAD, and protected retries for uncertain outcomes. Customer-facing names are Lesaka; the existing `kazang` integration key remains compatible. |
+| v1.13.0 | Releases the existing Lesaka checkout contract with updated customer-outcome guidance and the private three-cycle UAT recording workflow. Public method signatures stay compatible. |
 
 The public SDK methods and merchant snippet parameters remain compatible. Existing static, dynamic, pending-code and hosted checkouts use the saved merchant configuration automatically. This guide now covers Lesaka setup, checkout requests, payment results, eligibility, errors and retries in addition to the existing VAT and Request-to-Pay contracts.
 
@@ -98,7 +99,7 @@ The public SDK methods and merchant snippet parameters remain compatible. Existi
 
 | Resource | URL |
 |---|---|
-| SDK v1.12.0 (stable v1 URL) | `https://www.paysme.site/sdk/v1/paysme.js` |
+| SDK v1.13.0 (stable v1 URL) | `https://www.paysme.site/sdk/v1/paysme.js` |
 | Hosted Payment Page | `https://paysme.site/pay/:merchant_id?invoice_id=...&amount=...&product_name=...` |
 | API Base | `https://zvoqrqdnuupdefsuiurt.supabase.co/functions/v1` |
 
@@ -395,7 +396,7 @@ If the SDK is loaded inside a WebView, the app developer must:
 
 4. Wait for the method the app uses, for example `window.PaySME?.renderRequestToPayButton`, before enabling the in-app payment button. Do not block on an exact `PaySME.version` string.
 5. After ten seconds, offer the generated hosted checkout URL instead of displaying an indefinite loading state.
-6. Reload or recreate the WebView when validating an SDK release. Log `window.PaySME?.version` for diagnostics; the current release is `1.12.0`, but exact minor-version equality must not control readiness.
+6. Reload or recreate the WebView when validating an SDK release. Log `window.PaySME?.version` for diagnostics; the current release is `1.13.0`, but exact minor-version equality must not control readiness.
 7. Allow navigation to PaySME, Adumo, and approved banking/deep-link destinations used by the enabled payment methods.
 8. Treat messages bridged from JavaScript to native code as UI events only. Signed PaySME server webhooks remain the authoritative payment proof.
 
@@ -746,7 +747,7 @@ Lesaka voucher errors return a readable `error` and, where available, a machine-
 | 409 | `lesaka_reconciliation_required` | Do not submit another voucher; ask support to reconcile the payment |
 | 503 | `lesaka_not_configured` | Merchant/platform configuration is unavailable; choose an available method |
 
-The existing SDK and hosted checkout display the backend customer message. Known used, expired, cancelled and reversed states are identified before balance matching, so a zero balance is not presented as a checkout value error. Unsupported vouchers ask the customer to use a supported voucher; merchant/provider authorization problems ask them to choose another payment method or contact the merchant. An uncertain outcome instructs them to retry the same voucher on the same checkout. No SDK credential parameters or replacement SDK file are needed for these centrally served messages.
+The existing SDK and hosted checkout display the backend customer message. Known used, expired, cancelled and reversed states are identified before balance matching, so a zero balance is not presented as a checkout value error. Unsupported vouchers ask the customer to use a supported voucher; merchant/provider authorization problems ask them to choose another payment method or contact the merchant. An uncertain outcome instructs them to retry the same voucher on the same checkout. SDK v1.13.0 keeps the same credential-free public methods. Existing compatible SDK integrations also receive these centrally served customer messages.
 
 Provider-reported failures may return a `lesaka_<number>` code and a `trace_id` (the provider calls it `traceId`). Use the displayed message and retain those identifiers for support; a failed or uncertain response is not proof of payment.
 
@@ -773,7 +774,7 @@ Adumo card error codes (returned in `error_code`):
 
 Run the SDK demo: <https://www.paysme.site/sdk/v1/demo.html>
 
-SDK v1.12.0 includes merchant-specific Lesaka 4All voucher payments and retains merchant VAT lookup, the Namibia VAT breakdown and the official `renderRequestToPayButton` route. Existing `init`, `create` and `pending` integrations keep their behavior and use the saved Lesaka setup automatically. The stable v1 SDK URL receives compatible updates after reload and HTTP revalidation. Log `window.PaySME.version` and check the required method exists; do not reject a compatible release solely because its minor version changed. The card examples above are card-only data and must not be used as Lesaka credentials or voucher PINs.
+SDK v1.13.0 includes merchant-specific Lesaka 4All voucher payments and retains merchant VAT lookup, the Namibia VAT breakdown and the official `renderRequestToPayButton` route. Existing `init`, `create` and `pending` integrations keep their behavior and use the saved Lesaka setup automatically. The stable v1 SDK URL receives compatible updates after reload and HTTP revalidation. Log `window.PaySME.version` and check the required method exists; do not reject a compatible release solely because its minor version changed. The card examples above are card-only data and must not be used as Lesaka credentials or voucher PINs.
 
 ---
 

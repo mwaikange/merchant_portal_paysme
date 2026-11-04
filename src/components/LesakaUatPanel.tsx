@@ -14,6 +14,7 @@ type State = { enabled: boolean; credentials_current?: boolean; campaign: { id: 
 const empty: State = { enabled: false, campaign: null, inventory: [], executions: [] };
 const label = (value: string) => ({ pass: "Passed", fail: "Failed", review: "Needs review", blocked: "Blocked", uncertain: "Uncertain", error: "Error", running: "Running", pending: "Not run" }[value] || value);
 const guideCases = LESAKA_UAT_CASES.filter(item => /^TC-(STAT|RED|EDGE)-/.test(item.id));
+const providerIds = (run: Execution, key: "traceId" | "id") => [...new Set(run.evidence.filter(call => key === "traceId" || call.operation === "redeem" && call.http_status === 200).map(call => call.response[key]).filter((value): value is string => typeof value === "string" && Boolean(value)))];
 const colour = (value: string) => value === "pass" ? "text-emerald-300" : ["fail", "error"].includes(value) ? "text-red-300" : "text-yellow-200";
 const csvCell = (value: unknown) => { let s = typeof value === "string" ? value : JSON.stringify(value ?? ""); if (/^[=+@-]/.test(s)) s = "'" + s; return '"' + s.replaceAll('"', '""') + '"'; };
 function download(name: string, text: string, mime: string) {
@@ -72,11 +73,11 @@ export function LesakaUatPanel({ merchantId }: { merchantId: string }) {
     const report = { environment: "staging", exported_at: new Date().toISOString(), campaign: state.campaign, cycles: summary, all_three_guide_cycles_passed: summary.every(s => s.guide_passed === guideCases.length), all_three_cycles_passed: summary.every(s => s.passed === LESAKA_UAT_CASES.length), cases: LESAKA_UAT_CASES, checklist: checks, inventory: state.inventory, executions: state.executions };
     const filename = `Lesaka-UAT-${state.campaign?.id || "checklist"}`;
     if (format === "json") return download(filename + ".json", JSON.stringify(report, null, 2), "application/json");
-    const header = ["Cycle", "Case", "Title", "Expected", "Verdict", "Execution ID", "Started UTC", "Finished UTC", "Client reference", "Actor", "Voucher", "Reason", "Request/response evidence", "Manual observations"];
+    const header = ["Cycle", "Case", "Title", "Expected", "Verdict", "Execution ID", "Started UTC", "Finished UTC", "Client reference", "Lesaka receipt IDs", "Trace IDs", "Actor", "Voucher", "Reason", "Request/response evidence", "Manual observations"];
     const rows = checks.flatMap(check => {
       const runs = state.executions.filter(item => item.cycle === check.cycle && item.case_id === check.case_id);
-      if (!runs.length) return [[check.cycle, check.case_id, check.title, check.expected, "Not run", "", "", "", "", "", "", "", "", ""]];
-      return runs.map(item => [item.cycle, item.case_id, check.title, check.expected, label(item.verdict), item.id, item.started_at, item.completed_at, item.client_reference, item.actor_kind, state.inventory.find(f => f.id === item.fixture_id)?.fixture_id || "Synthetic input", item.reason, item.evidence, item.lesaka_uat_notes || []]);
+      if (!runs.length) return [[check.cycle, check.case_id, check.title, check.expected, "Not run", "", "", "", "", "", "", "", "", "", "", ""]];
+      return runs.map(item => [item.cycle, item.case_id, check.title, check.expected, label(item.verdict), item.id, item.started_at, item.completed_at, item.client_reference, providerIds(item, "id").join("; "), providerIds(item, "traceId").join("; "), item.actor_kind, state.inventory.find(f => f.id === item.fixture_id)?.fixture_id || "Synthetic input", item.reason, item.evidence, item.lesaka_uat_notes || []]);
     });
     download(filename + ".csv", "\uFEFF" + [header, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n"), "text/csv;charset=utf-8");
   };
@@ -120,7 +121,7 @@ export function LesakaUatPanel({ merchantId }: { merchantId: string }) {
         </div>
         <div className="space-y-3 rounded-md border border-white/15 p-3">
           <h4 className="font-semibold">Latest result for Cycle {cycle}</h4>
-          {selected ? <><p className={colour(selected.verdict)}>{label(selected.verdict)}</p><p className="text-sm">{selected.reason}</p><p className="break-all text-xs text-white/60">Reference: {selected.client_reference}<br />Execution: {selected.id}<br />Started: {new Date(selected.started_at).toLocaleString("en-GB", { timeZone: "Africa/Windhoek", timeZoneName: "short" })}</p>
+          {selected ? <><p className={colour(selected.verdict)}>{label(selected.verdict)}</p><p className="text-sm">{selected.reason}</p><p className="break-all text-xs text-white/60">Reference: {selected.client_reference}<br />Lesaka receipt IDs: {providerIds(selected, "id").join("; ") || "Not returned"}<br />Trace IDs: {providerIds(selected, "traceId").join("; ") || "Not returned"}<br />Execution: {selected.id}<br />Started: {new Date(selected.started_at).toLocaleString("en-GB", { timeZone: "Africa/Windhoek", timeZoneName: "short" })}</p>
             <Label htmlFor="lesaka-uat-note">Your manual observation</Label><Textarea id="lesaka-uat-note" value={note} maxLength={2000} disabled={busy} onChange={e => setNote(e.target.value)} placeholder="What you saw, and any supplier clarification. Do not include PINs or passwords." />
             <Button type="button" variant="outline" disabled={busy || !note.trim()} onClick={() => work(async () => { await invoke("note", { campaign_id: state.campaign?.id, execution_id: selected.id, note }); setNote(""); await refresh(); })}>Save observation</Button>
             {(selected.lesaka_uat_notes || []).map(item => <p key={item.id} className="rounded border border-white/10 p-2 text-xs">{item.note}</p>)}

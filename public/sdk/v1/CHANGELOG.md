@@ -1,5 +1,13 @@
 # PaySME SDK Changelog
 
+## v1.13.0 - 2026-11-04
+
+- Releases the merchant-specific Lesaka 4All voucher checkout with the same compatible `init`, `create`, `pending` and Request-to-Pay methods.
+- SDK and hosted checkout display central customer guidance for used, expired, cancelled, reversed, unsupported and uncertain vouchers. Provider credentials stay on the server.
+- Adds operator documentation for the private three-cycle test recorder, automatic references/trace IDs, redacted evidence exports and read-only inventory discovery. These tools do not settle real payments.
+- Keeps the stable `/sdk/v1/paysme.js` URL. The published SDK reports `PaySME.version === "1.13.0"`; merchants using a self-hosted copy should replace that file.
+- Updates the integration guide, PDF, demo, portal documentation card and SDK README together. Platform UAT and supplier production sign-off remain outstanding.
+
 ## v1.12.0 - 2026-10-20
 
 - 3 November 2026 operator tooling: added read-only serial status discovery across the approved voucher inventory; reserved manual vouchers remain excluded from automated redemption. SDK JavaScript and public methods are unchanged.

@@ -1,6 +1,6 @@
 # PaySME Lesaka — Three-cycle UAT workflow
 
-Updated 3 November 2026. SDK version remains **1.12.0**.
+Updated 4 November 2026. SDK release **1.13.0**.
 
 This private recorder is available only to the approved PaySME merchant account in **API & integration > Lesaka test recorder**. It uses the staging credentials saved in that account's Lesaka credential form. Provider usernames and passwords remain on the server. The public SDK and hosted checkout receive no provider credentials.
 
@@ -26,7 +26,7 @@ A fixture must have the state required by its case. The recorder checks status b
 
 ## Evidence, retries and results
 
-Every execution records its cycle, case ID, execution ID, client reference, request time, timestamps, HTTP status and redacted request/response evidence. Provider receipt IDs and trace IDs are retained when returned. PINs, authentication headers and provider credentials are removed from evidence and exports. Requests, status prechecks and post-redemption checks remain associated with the same execution.
+Every execution records its cycle, case ID, execution ID, client reference, request time, timestamps, HTTP status and redacted request/response evidence. Provider receipt IDs and trace IDs are retained when returned, displayed with the selected result, and included in dedicated CSV columns. No trace ID is invented when the provider omits it. The Excel tracker is a separate snapshot with Cycle 1 results and editable Cycle 2/3 sheets; the portal remains the saved record. Export after each cycle, and the tracker can be refreshed from those records. PINs, authentication headers and provider credentials are removed from evidence and exports. Requests, status prechecks and post-redemption checks remain associated with the same execution.
 
 A timeout or uncertain redemption remains **Uncertain**. Use **Retry original execution**, with the same selected voucher and manual PIN if required. The server preserves the original redemption reference and request time. Do not start a new redemption to resolve an uncertain one. Interrupted executions can be resumed after their running lease expires; their saved intent remains available.
 

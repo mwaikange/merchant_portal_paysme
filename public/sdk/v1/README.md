@@ -1,10 +1,12 @@
-# PaySME SDK v1.12.0
+# PaySME SDK v1.13.0
 
 **Dynamic, Centrally Managed Payment Integration**
 
+Released 4 November 2026. If you host your own SDK copy, replace that file with this release and keep the filename `paysme.js`. Sites loading the stable PaySME-hosted URL receive v1.13.0 after reload and cache revalidation.
+
 Lesaka uses the Lesaka 4All voucher API through PaySME's server. Customers enter a 16-digit voucher PIN, and the server checks that the voucher is Active, unexpired, denominated in `NAD`, and worth exactly the checkout amount before redeeming its full balance. The SDK displays confirmation only after the server verifies redemption and settlement. An uncertain request must be retried with the same voucher for the same checkout.
 
-Each merchant saves their own Lesaka API username and password under **Merchant Portal > API & integration > Facilitator Merchant Codes > Lesaka**, then enables the customer-facing button. Both fields are required and encrypted before database storage; only the backend decrypts them for the matching merchant's payment. Store ID is optional when supplied by Lesaka. The SDK and hosted checkout never receive provider credentials, and the existing `init`, `create` and `pending` integrations need no extra credential parameters or separate Lesaka method. The internal provider/payment-method key remains `kazang` for compatibility, including `methods.kazang` in checkout eligibility. See the [v1.12.0 API integration guide](https://merchant.paysme.site/docs/PaySME_Payment_Modal_API_Integration.md?v=1.12.0) for setup, callbacks, errors and retries.
+Each merchant saves their own Lesaka API username and password under **Merchant Portal > API & integration > Facilitator Merchant Codes > Lesaka**, then enables the customer-facing button. Both fields are required and encrypted before database storage; only the backend decrypts them for the matching merchant's payment. Store ID is optional when supplied by Lesaka. The SDK and hosted checkout never receive provider credentials, and the existing `init`, `create` and `pending` integrations need no extra credential parameters or separate Lesaka method. The internal provider/payment-method key remains `kazang` for compatibility, including `methods.kazang` in checkout eligibility. See the [v1.13.0 API integration guide](https://merchant.paysme.site/docs/PaySME_Payment_Modal_API_Integration.md?v=1.13.0) for setup, callbacks, errors and retries.
 
 Checkout now collects a required Town before Email Address and Mobile Number. A custom, non-native suggestion panel begins after three characters, matches without case sensitivity, prioritises names that start with the query, and still allows manual town entry.
 
@@ -317,8 +319,8 @@ The SDK is versioned at `/sdk/v1/paysme.js`. Use the stable URL `https://www.pay
 - Website: [paysme.site](https://paysme.site)
 - Email: support@paysme.site
 
-Private PaySME operator testing: see the [Lesaka three-cycle UAT workflow](https://merchant.paysme.site/docs/PaySME_Lesaka_UAT_Workflow.md). The recorder captures redacted evidence and preserves at least half of each voucher value for manual tests. SDK v1.12.0 and its public methods remain unchanged.
+Private PaySME operator testing: see the [Lesaka three-cycle UAT workflow](https://merchant.paysme.site/docs/PaySME_Lesaka_UAT_Workflow.md). The recorder captures redacted evidence and preserves at least half of each voucher value for manual tests. SDK v1.13.0 retains the public methods used by the previous release.
 
-Customer outcome wording is served centrally: used, expired, cancelled and reversed voucher states have distinct messages even when their remaining balance is zero. Unsupported vouchers and merchant authorization failures have actionable messages. The existing SDK v1.12.0 and hosted checkout display these server messages without a replacement SDK download. Staging gateway ProblemDetails business codes in `status` are preserved for support; validation HTTP 400 is never relabelled as business code 5005 without supplier evidence.
+Customer outcome wording is served centrally: used, expired, cancelled and reversed voucher states have distinct messages even when their remaining balance is zero. Unsupported vouchers and merchant authorization failures have actionable messages. The existing SDK v1.13.0 and hosted checkout display these server messages without a replacement SDK download. Staging gateway ProblemDetails business codes in `status` are preserved for support; validation HTTP 400 is never relabelled as business code 5005 without supplier evidence.
 
-Operator voucher discovery can inspect serial status across the approved inventory without sending PINs or redeeming vouchers. This private test action does not change SDK v1.12.0 or authorize automated redemption of reserved manual vouchers.
+Operator voucher discovery can inspect serial status across the approved inventory without sending PINs or redeeming vouchers. This private test action does not add methods to SDK v1.13.0 or authorize automated redemption of reserved manual vouchers.
