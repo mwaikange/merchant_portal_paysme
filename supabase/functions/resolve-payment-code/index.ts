@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
 
     const { data: transaction, error: transactionError } = await supabase
       .from("transactions")
-      .select("transaction_id, merchant_id, generated_code, amount, user_email, user_mobile, payer_town, status, type, invoice_id, business_name, created_at, vendor_obligation_id, vendor_redeemable, payment_purpose, allowed_payment_methods, tax_mode, vat_rate, net_amount, vat_amount, gross_amount")
+      .select("transaction_id, merchant_id, generated_code, amount, user_email, user_mobile, payer_town, status, type, invoice_id, business_name, created_at, vendor_obligation_id, vendor_redeemable, payment_purpose, allowed_payment_methods, tax_mode, vat_rate, net_amount, vat_amount, gross_amount, is_test, test_provider")
       .in("generated_code", codeCandidates)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -80,6 +80,13 @@ Deno.serve(async (req) => {
     if (transactionError) throw transactionError;
 
     if (transaction) {
+      let testCompleted = false;
+      if (transaction.is_test === true && transaction.test_provider === "lesaka" && transaction.status === "pending") {
+        const { data: attempt, error: attemptError } = await supabase.from("lesaka_voucher_attempts")
+          .select("status").eq("transaction_id", transaction.transaction_id).eq("merchant_id", transaction.merchant_id).eq("environment", "staging").maybeSingle();
+        if (attemptError) throw attemptError;
+        testCompleted = attempt?.status === "tested";
+      }
 
       return jsonResponse({
         ok: true,
@@ -92,6 +99,7 @@ Deno.serve(async (req) => {
           user_mobile: transaction.user_mobile,
           payer_town: transaction.payer_town,
           status: transaction.status,
+          ...(testCompleted ? { test_completed: true } : {}),
           invoice_id: transaction.invoice_id || transaction.generated_code,
           business_name: transaction.business_name || "PaySME",
           vendor_obligation_id: transaction.vendor_obligation_id || null,

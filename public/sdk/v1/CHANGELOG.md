@@ -2,6 +2,8 @@
 
 ## v1.13.1 - 2026-11-04
 
+- Hosted Lesaka staging tests now close on their transaction link after verified redemption. Reopened test links display Test checkout already completed using a server-verified `test_completed` flag. Live checkout behavior and SDK JavaScript are unchanged.
+
 - Recorder submission follows the 18 supplier Excel cases per cycle, with workbook-shaped reports, evidence-based reassessment and optional website-guide checks. SDK JavaScript is unchanged for this recorder update.
 
 - Unifies hosted `/pay/` and `/c/` checkout backgrounds, removes underlying desktop payment buttons during provider entry, and labels completed-voucher retries with `replayed: true` and Already completed. The recorder distinguishes repeats from new test passes and links to controlled short/long-PIN tests without relaxing normal checkout validation.

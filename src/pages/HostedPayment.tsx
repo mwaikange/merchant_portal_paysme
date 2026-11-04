@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,6 +54,7 @@ type HostedMerchantData = {
 };
 
 const HostedPayment = () => {
+  const navigate = useNavigate();
   const { merchantId, qrSlug } = useParams();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -489,6 +490,7 @@ const HostedPayment = () => {
       <PaycodeModal
         isOpen={showPaycodeModal}
         onClose={() => { setShowPaycodeModal(false); setShowPaymentForm(true); }}
+        onTestComplete={() => navigate(`/c/${encodeURIComponent(generatedCode)}`, { replace: true })}
         mobileBrandedPage
         generatedCode={generatedCode}
         paymentData={formData ? { 

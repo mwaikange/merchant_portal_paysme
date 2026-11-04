@@ -627,6 +627,8 @@ After a successful redemption, retrying the same voucher on the same checkout re
 
 #### Checkout request and compatible identifiers
 
+Verified Lesaka staging completions close the transaction checkout with **Test checkout already completed**. Hosted test checkout redirects to its transaction-specific `/c/` link after the verified test result; reopening that transaction link displays completion without payment buttons. `resolve-payment-code` adds `test_completed: true` only for a permanently marked Lesaka test transaction whose matching staging voucher attempt is `tested`. Its transaction status remains unchanged and no live payment, paid callback or settlement is created. Non-test pending and paid checkout responses retain their existing behavior. Generic merchant `/pay/` links remain entry forms for new checkouts.
+
 The SDK submits this PaySME request automatically. Existing integrations do not need a custom voucher form or direct Lesaka API calls:
 
 ```http

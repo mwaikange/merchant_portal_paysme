@@ -20,6 +20,8 @@ This route is restricted server-side to serial enquiries and fixed synthetic inp
 
 ## Pass criteria
 
+After a successful hosted test redemption, the transaction-specific `/c/` link shows **Test checkout already completed** with no payment buttons. Reopening that same transaction link stays closed. This is a display state backed by the verified staging attempt, not a paid live transaction. The generic merchant `/pay/` link is still an entry form for new checkouts.
+
 A case passes when its captured result matches the Excel's business outcome. Equivalent vocabulary is displayed explicitly: **New = Active**, **Redeemed = Consumed**, **Spoilt = Reversed**. Valid PIN/serial validation errors do not require the website guide's extra business code 5005. An explicit supplier response saying **Voucher is not in a redeemable state** satisfies a matching negative redemption case; its actual HTTP status and business code remain visible in the evidence.
 
 The recorder reassesses already captured responses without sending more voucher requests. Previous assessments and source execution IDs are retained. A redeemed-status case needs its real redemption date/time and reference, using captured PaySME redemption history when available; missing metadata is never invented. Missing product information, unsuitable fixtures, network failures and uncertain financial outcomes are not marked passed.

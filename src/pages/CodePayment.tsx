@@ -14,6 +14,7 @@ type ResolvedPayment = {
   user_mobile?: string | null;
   payer_town?: string | null;
   status?: string | null;
+  test_completed?: boolean;
   invoice_id?: string | null;
   business_name?: string | null;
   tax_mode?: "not_registered" | "vat_inclusive" | "vat_exclusive";
@@ -119,7 +120,7 @@ const CodePayment = () => {
 
   const amount = Number(payment?.amount || 0).toFixed(2);
   const paymentStatus = String(payment?.status || "").toLowerCase();
-  const isCompleted = ["paid", "success", "successful", "completed", "finalized"].includes(paymentStatus);
+  const isCompleted = payment?.test_completed === true || ["paid", "success", "successful", "completed", "finalized"].includes(paymentStatus);
   const isClosed = ["cancelled", "canceled", "expired"].includes(paymentStatus);
 
   return (
@@ -161,9 +162,9 @@ const CodePayment = () => {
               <CheckCircle2 className="mb-4 h-10 w-10 text-emerald-400" />
               <p className="text-xs uppercase tracking-[0.2em] text-[#f6c431]">PaySME code</p>
               <h1 className="mt-2 text-3xl font-bold">{payment.generated_code}</h1>
-              <h2 className="mt-5 text-2xl font-bold">Payment already completed!</h2>
+              <h2 className="mt-5 text-2xl font-bold">{payment.test_completed ? "Test checkout already completed" : "Payment already completed!"}</h2>
               <p className="mt-3 text-sm text-gray-300">
-                This payment for {payment.business_name || "PaySME Store"} has already been completed.
+                {payment.test_completed ? "This test voucher was redeemed successfully. This checkout is closed; no live payment was marked paid." : `This payment for ${payment.business_name || "PaySME Store"} has already been completed.`}
               </p>
               <p className="mt-2 text-sm font-semibold text-white">N$ {amount}</p>
               {payment.tax_mode && payment.tax_mode !== "not_registered" && <p className="mt-1 text-xs text-white/70">VAT ({payment.vat_rate || 0}%) {payment.tax_mode === "vat_inclusive" ? "included" : `N$ ${Number(payment.vat_amount || 0).toFixed(2)} added`}</p>}
@@ -208,6 +209,7 @@ const CodePayment = () => {
         <PaycodeModal
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
+          onTestComplete={() => { setModalOpen(false); setRetryKey(value => value + 1); }}
           generatedCode={payment.generated_code}
           mobileBrandedPage
           paymentData={{

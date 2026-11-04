@@ -56,6 +56,7 @@ type WayaMePaymentResponse = {
 interface PaycodeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onTestComplete?: () => void;
   generatedCode: string;
   renderInPortal?: boolean;
   mobileBrandedPage?: boolean;
@@ -84,6 +85,7 @@ interface PaycodeModalProps {
 export function PaycodeModal({
   isOpen,
   onClose,
+  onTestComplete,
   generatedCode,
   renderInPortal = false,
   mobileBrandedPage = false,
@@ -379,6 +381,7 @@ export function PaycodeModal({
         setLesakaReplayed(data.replayed === true);
         setMobiWandCode("");
         setMobiWandStep(data.status);
+        if (data.status === "tested") onTestComplete?.();
         if (data.status === "paid") {
           window.dispatchEvent(new CustomEvent("paysme:payment-success", { detail: data }));
           toast({ title: "Payment confirmed", description: "Lesaka confirmed this voucher payment." });
@@ -717,7 +720,7 @@ export function PaycodeModal({
                 <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-[#B3D31B]" />
                 <h4 className="text-lg font-bold text-white">{lesakaReplayed ? "Already completed" : mobiWandStep === "paid" ? "Payment confirmed" : "Test voucher redeemed"}</h4>
                 <p className="mt-2 text-sm text-gray-200">{lesakaReplayed ? "This checkout was completed earlier. No voucher was redeemed again. Use a new checkout to test another voucher." : mobiWandStep === "paid" ? "Lesaka confirmed this voucher payment." : "Staging test complete. No real payment was marked paid."}</p>
-                <Button onClick={mobiWandStep === "paid" ? onClose : closeMobiWand} className="mt-5 w-full">Close</Button>
+                <Button onClick={mobiWandStep === "tested" && onTestComplete ? onTestComplete : mobiWandStep === "paid" ? onClose : closeMobiWand} className="mt-5 w-full">Close</Button>
               </div>
             ) : mobiWandStep === "passed" ? (
               <div className="flex flex-col items-center justify-center py-3 text-center">

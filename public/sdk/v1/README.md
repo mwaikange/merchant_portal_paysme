@@ -1,5 +1,7 @@
 # PaySME SDK v1.13.1
 
+Verified Lesaka test transaction links display a closed test-completion screen rather than another voucher form. Hosted tests switch to their transaction `/c/` link after completion. The server's `test_completed` flag never changes a transaction to paid; production behavior and SDK JavaScript are unchanged.
+
 **Dynamic, Centrally Managed Payment Integration**
 
 Released 4 November 2026. If you host your own SDK copy, replace that file with this release and keep the filename `paysme.js`. Sites loading the stable PaySME-hosted URL receive v1.13.1 after reload and cache revalidation.
