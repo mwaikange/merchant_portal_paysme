@@ -72,7 +72,7 @@ export function LesakaUatPanel({ merchantId, apiKey }: { merchantId: string; api
   const openModal=()=>work(async()=>{
     if(!apiKey)throw new Error("Use your website's PaySME payment button or the hosted checkout.");
     const sdkWindow=window as unknown as {PaySME?:{init:(config:Record<string,unknown>)=>void}};
-    if(!sdkWindow.PaySME)await new Promise<void>((resolve,reject)=>{const script=document.createElement("script");script.src="https://www.paysme.site/sdk/v1/paysme.js?v=1.13.0";script.onload=()=>resolve();script.onerror=()=>reject(new Error("The payment modal could not load."));document.head.appendChild(script);});
+    if(!sdkWindow.PaySME)await new Promise<void>((resolve,reject)=>{const script=document.createElement("script");script.src="https://www.paysme.site/sdk/v1/paysme.js?v=1.13.1";script.onload=()=>resolve();script.onerror=()=>reject(new Error("The payment modal could not load."));document.head.appendChild(script);});
     sdkWindow.PaySME?.init({vendor_uuid:merchantId,api_key:apiKey,amount_nad:Number(checkoutAmount),invoice_id:`LES-UAT-C${state.campaign?.customer_cycle||cycle}-${Date.now()}`});
   });
   const autoRun=()=>work(async()=>{

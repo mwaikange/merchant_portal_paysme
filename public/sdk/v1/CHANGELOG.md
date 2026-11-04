@@ -1,12 +1,14 @@
 # PaySME SDK Changelog
 
-## v1.13.0 - 2026-11-04
+## v1.13.1 - 2026-11-04
 
 - Unifies hosted `/pay/` and `/c/` checkout backgrounds, removes underlying desktop payment buttons during provider entry, and labels completed-voucher retries with `replayed: true` and Already completed. The recorder distinguishes repeats from new test passes and links to controlled short/long-PIN tests without relaxing normal checkout validation.
 
 - Reduces the Lesaka voucher font by one point and tightens digit spacing for mobile. Repairs the standard transaction payment-method default and legacy pending checkout lists to include Lesaka; custom restrictions remain enforced. The 12-digit serial is for enquiries and the 16-digit PIN is for redemption.
 
-- Shows entered Lesaka voucher digits as readable text in the SDK, hosted checkout and manual test recorder. Version remains 1.13.0; replace self-hosted SDK copies to receive this display fix.
+- Shows entered Lesaka voucher digits as readable text in the SDK, hosted checkout and manual test recorder. Patch release 1.13.1; replace self-hosted SDK copies to receive this display fix.
+
+## v1.13.0 - 2026-11-04
 
 - Adds per-business staging voucher uploads and three test methods: automatic API checks, manual portal cases, and normal SDK/hosted checkout with background recording. The portal exports current Excel evidence and provides a guarded Staging/Live switch with test-data cleanup. The v1.13.0 JavaScript file remains compatible and needs no further replacement for these centrally managed controls.
 

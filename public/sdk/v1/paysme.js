@@ -1,5 +1,5 @@
 /**
- * PaySME SDK v1.13.0
+ * PaySME SDK v1.13.1
  * Dynamic, Centrally Managed Payment Modal
  * https://www.paysme.site/sdk/v1/paysme.js
  *
@@ -13,7 +13,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "1.13.0";
+  var VERSION = "1.13.1";
   var PENDING_LOOKUP_URL = "https://zvoqrqdnuupdefsuiurt.supabase.co/rest/v1/rpc/lookup_pending_transaction";
   var EDGE_FN_URL = "https://zvoqrqdnuupdefsuiurt.supabase.co/functions/v1/payments";
   var REQUEST_TO_PAY_URL = "https://zvoqrqdnuupdefsuiurt.supabase.co/functions/v1/mobile-request-to-pay";
