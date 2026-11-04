@@ -33,3 +33,4 @@ Expired, reversed and unsupported-product fixtures are still needed for their co
 ## Live activation and cleanup
 
 After the 18 Excel cases pass in all three cycles, export the evidence, obtain Lesaka's approval, save live credentials separately and use the Lesaka card's Live switch. No SDK upload or URL change is needed. Live activation and cleanup refuse unresolved payments. Test checkouts remain permanently excluded from live settlement and reporting; cleanup removes only this business's test campaign and voucher inventory.
+Selecting a cycle tab does not reassign existing customer checkouts. If a different cycle's session is active, the portal blocks new checkout buttons and asks you to start customer testing for the selected cycle. Create a new checkout after switching; older links and results retain their original cycle.
