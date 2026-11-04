@@ -2,6 +2,8 @@
 
 ## v1.13.0 - 2026-11-04
 
+- Reduces the Lesaka voucher font by one point and tightens digit spacing for mobile. Repairs the standard transaction payment-method default and legacy pending checkout lists to include Lesaka; custom restrictions remain enforced. The 12-digit serial is for enquiries and the 16-digit PIN is for redemption.
+
 - Shows entered Lesaka voucher digits as readable text in the SDK, hosted checkout and manual test recorder. Version remains 1.13.0; replace self-hosted SDK copies to receive this display fix.
 
 - Adds per-business staging voucher uploads and three test methods: automatic API checks, manual portal cases, and normal SDK/hosted checkout with background recording. The portal exports current Excel evidence and provides a guarded Staging/Live switch with test-data cleanup. The v1.13.0 JavaScript file remains compatible and needs no further replacement for these centrally managed controls.

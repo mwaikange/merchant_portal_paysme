@@ -614,7 +614,7 @@ There is no separate Lesaka SDK method or additional credential parameter. `PayS
 
 1. The customer selects **Pay via Lesaka** and uses a Lesaka 4All voucher from a participating Kazang retailer.
 2. The voucher's full balance must equal the checkout's final payable amount, including any VAT already calculated by PaySME. Currency is **NAD** (N$). Partial redemption and vouchers with a different balance are not accepted by this checkout.
-3. The customer enters the **16-digit PIN from the receipt** into the visible voucher field and selects **Confirm payment**. Entered digits remain readable in the SDK and hosted checkout. This is a voucher PIN, not an SMS code or a PaySME Code.
+3. The customer enters the **16-digit PIN from the receipt** into the visible voucher field and selects **Confirm payment**. Entered digits remain readable in the SDK and hosted checkout, with smaller type and spacing to fit the full PIN on mobile. The **12-digit serial number is for status enquiries, not payment redemption**. This is a voucher PIN, not an SMS code or a PaySME Code.
 4. PaySME checks that the voucher is Active, unexpired and matches the currency and amount. It then redeems the full balance and verifies the resulting receipt and zero remaining balance.
 5. Only verified redemption and matching PaySME settlement produce **Payment confirmed**, `status: "paid"`, the normal payment-success signal and merchant payment notifications.
 

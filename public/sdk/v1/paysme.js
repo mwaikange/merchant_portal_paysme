@@ -118,6 +118,7 @@
     ".paysme-provider-back:hover:not(:disabled){background:#f3f4f6;color:#111827}",
     ".paysme-provider-code{width:100%;box-sizing:border-box;border:1px solid #9ca3af;border-radius:7px;background:#fff;color:#111827;font-size:22px;font-weight:700;letter-spacing:4px;text-align:center;padding:12px;margin:2px 0 10px;outline:none}",
     ".paysme-provider-code:focus{border-color:#fbbf24;box-shadow:0 0 0 2px rgba(251,191,36,.3)}",
+    ".paysme-provider-code.paysme-provider-code-kazang{font-size:calc(22px - 1pt);letter-spacing:2px}",
     ".paysme-provider-code.paysme-provider-code-kazang:focus{border-color:#B3D31B;box-shadow:0 0 0 2px rgba(179,211,27,.3)}",
     ".paysme-provider-timer{font-size:13px;color:#fbbf24;margin:-7px 0 13px}",
     ".paysme-wayame-panel{justify-content:flex-start;overflow-y:auto;padding:18px}",

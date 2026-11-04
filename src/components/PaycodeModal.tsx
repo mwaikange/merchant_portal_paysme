@@ -783,6 +783,7 @@ export function PaycodeModal({
                   disabled={mobiWandStep === "waiting" || mobiWandLoading}
                   placeholder={mobiWandProvider === "kazang" ? "16-digit PIN" : "Code"}
                   aria-label={mobiWandProvider === "kazang" ? "Lesaka 4All voucher 16-digit PIN" : `${mobiWandProviders[mobiWandProvider].name} confirmation Paycode`}
+                  style={mobiWandProvider === "kazang" ? { fontSize: "calc(1.25rem - 1pt)", letterSpacing: "2px" } : undefined}
                   className={`mb-3 w-full rounded-md border border-gray-400 bg-white px-3 py-3 text-center text-xl font-bold tracking-[0.25em] text-gray-900 outline-none ${mobiWandProvider === "kazang" ? "focus:border-[#B3D31B] focus:ring-2 focus:ring-[#B3D31B]/30" : "focus:border-[#fbbf24] focus:ring-2 focus:ring-[#fbbf24]/30"}`}
                   autoFocus
                 />
