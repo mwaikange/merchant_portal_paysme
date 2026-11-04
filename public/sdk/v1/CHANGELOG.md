@@ -2,6 +2,8 @@
 
 ## v1.13.1 - 2026-11-04
 
+- Recorder submission follows the 18 supplier Excel cases per cycle, with workbook-shaped reports, evidence-based reassessment and optional website-guide checks. SDK JavaScript is unchanged for this recorder update.
+
 - Unifies hosted `/pay/` and `/c/` checkout backgrounds, removes underlying desktop payment buttons during provider entry, and labels completed-voucher retries with `replayed: true` and Already completed. The recorder distinguishes repeats from new test passes and links to controlled short/long-PIN tests without relaxing normal checkout validation.
 
 - Reduces the Lesaka voucher font by one point and tightens digit spacing for mobile. Repairs the standard transaction payment-method default and legacy pending checkout lists to include Lesaka; custom restrictions remain enforced. The 12-digit serial is for enquiries and the 16-digit PIN is for redemption.

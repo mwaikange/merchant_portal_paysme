@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     if (body.action === "set_environment") {
       if(!["staging","production"].includes(body.target_environment)||body.confirmed!==true)return json({error:"Confirm the Lesaka environment change first."},400);
       const changed=await admin.rpc("set_lesaka_environment",{p_merchant:merchantId,p_environment:body.target_environment,p_reference:typeof body.approval_reference==="string"?body.approval_reference.trim():""});
-      if(changed.error)return json({error:"Live activation requires saved live credentials, all 12 guide cases passed in each of 3 cycles, exported evidence and Lesaka approval. Resolve pending or uncertain outcomes before switching."},409);
+      if(changed.error)return json({error:"Live activation requires saved live credentials, all 18 Excel workbook cases passed in each of 3 cycles, exported evidence and Lesaka approval. Resolve pending or uncertain outcomes before switching."},409);
       return json({ok:true,reload:true});
     } else if (body.action === "save" || body.action === "save_live") {
       const username = typeof body.username === "string" ? body.username.trim() : "";
@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     const live=await admin.from("lesaka_merchant_credentials").select("credential_version").eq("merchant_id",merchantId).eq("environment","production").maybeSingle();
     if(live.error)throw live.error;
     let completed=mode.uatCompleted;
-    if(!completed){const c=await admin.from("lesaka_uat_campaigns").select("id").eq("merchant_id",merchantId).order("created_at",{ascending:false}).limit(1).maybeSingle();if(c.error)throw c.error;if(c.data?.id){const count=await admin.rpc("lesaka_passed_guide_cases",{p_campaign:c.data.id});if(count.error)throw count.error;completed=count.data===36;}}
+    if(!completed){const c=await admin.from("lesaka_uat_campaigns").select("id").eq("merchant_id",merchantId).order("created_at",{ascending:false}).limit(1).maybeSingle();if(c.error)throw c.error;if(c.data?.id){const count=await admin.rpc("lesaka_passed_workbook_cases",{p_campaign:c.data.id});if(count.error)throw count.error;completed=count.data===54;}}
     return json({ ok: true, environment, configured: Boolean(record), store_id: record?.store_id || "", updated_at: record?.updated_at || null, enabled: facilitator?.enabled === true,live_configured:Boolean(live.data),live_ready:completed&&Boolean(live.data),approval_reference:mode.approvalReference });
   } catch (error) {
     if (error instanceof LesakaError) return json({ error: error.message, code: error.code }, error.status);

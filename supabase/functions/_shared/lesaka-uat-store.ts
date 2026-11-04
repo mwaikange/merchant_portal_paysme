@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.39.3";
 import type { Verdict } from "./lesaka-uat.ts";
+import { reconcileWorkbookEvidence } from "./lesaka-workbook-assessment.ts";
 export type Campaign = { id: string; merchant_id: string; credential_version: string; inventory_sha256: string | null; created_at: string; title: string };
 export type Fixture = { id: string; campaign_id: string; fixture_id: string; allocation: "automated" | "manual"; value_minor: number; serial_number: string; pin_fingerprint: string; encrypted_pin: { iv: string; ciphertext: string } | null; source_line: number; observed_state: string | null; locked_by: string | null };
 export type Evidence = { operation: string; client_reference: string; requested_at: string; finished_at: string | null; http_status: number; request: unknown; response: Record<string, unknown> };
@@ -48,7 +49,7 @@ export async function uatState(admin: SupabaseClient, campaign: Campaign | null)
     const page = await admin.from("lesaka_uat_executions").select("*,lesaka_uat_notes(*)").eq("campaign_id", campaign.id).order("started_at", { ascending: true }).order("id").range(offset, offset + 499);
     if (page.error) throw page.error;
     executions.push(...(page.data || []));
-    if ((page.data || []).length < 500) return { campaign, inventory: result.data || [], executions, customer_attempts: customers };
+    if ((page.data || []).length < 500) return { campaign, inventory: result.data || [], executions:await reconcileWorkbookEvidence(admin,campaign.id,executions as Execution[],result.data||[]), customer_attempts: customers };
   }
   throw new UatError("Campaign exceeds the evidence export limit. Contact PaySME support.", 409);
 }

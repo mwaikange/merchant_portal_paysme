@@ -131,7 +131,7 @@ export async function runUat(body: Record<string, unknown>, context: Context) {
     catch { return await finish("uncertain", "Redemption returned success but its follow-up evidence could not be captured. Keep the original reference."); }
     if (balance.http_status !== 200 || balance.response.remainingAmount !== 0 || balance.response.status !== "Consumed") return await finish("review", "Redemption receipt captured, but the follow-up zero/Consumed state needs supplier review.");
   }
-  if (fixture && test.operation === "status" && test.input === "serial" && test.state === "Active" && checked.verdict === "pass") {
+  if (fixture && test.id === "TC-STAT-02" && checked.verdict === "pass") {
     const candidates = await admin.from("lesaka_uat_executions").select("evidence").eq("campaign_id", campaign.id).eq("cycle", cycle).eq("fixture_id", fixture.id).in("case_id", ["TC-VS-001", "TC-STAT-01"]);
     const prior = (candidates.data || []).flatMap(item => item.evidence as Evidence[]).find(item => item.operation === "status" && item.http_status === 200 && item.response.status === "Active");
     const amount = outcome.response.totalAmount as { minor: number; currency: string };

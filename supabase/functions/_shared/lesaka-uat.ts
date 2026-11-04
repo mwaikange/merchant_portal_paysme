@@ -1,4 +1,6 @@
 // Private UAT helpers. These never settle PaySME transactions or send paid notifications.
+import { LESAKA_WORKBOOK_ROWS, WORKBOOK_CASE_IDS } from "./lesaka-workbook-cases.ts";
+export { LESAKA_WORKBOOK_ROWS, WORKBOOK_CASE_IDS } from "./lesaka-workbook-cases.ts";
 export type UatInput = "pin" | "serial" | "blank-pin" | "blank-serial" | "long-pin" | "short-pin" | "unknown-pin" | "unknown-serial" | "missing-reference" | "replay";
 export type UatCase = {
   id: string; title: string; operation: "status" | "redeem"; input: UatInput;
@@ -38,6 +40,8 @@ export const LESAKA_UAT_CASES: UatCase[] = [
   c("TC-EDGE-01", "API: replay original redemption", "redeem", "replay", "Same reference returns the original receipt; balance stays zero"),
   c("TC-EDGE-02", "API: 15-digit PIN", "redeem", "short-pin", "HTTP 400, ValidationFailure", { http: [400], errorCode: 5005 }),
 ];
+for (const row of LESAKA_WORKBOOK_ROWS) { const test=LESAKA_UAT_CASES.find(item=>item.id===row.id)!; test.expected=row.expected; delete test.review; }
+export const LESAKA_REQUIRED_CASES = LESAKA_UAT_CASES.filter(test=>WORKBOOK_CASE_IDS.has(test.id));
 export type Verdict = "running" | "pass" | "fail" | "review" | "blocked" | "uncertain" | "error";
 export type InventoryItem = { fixture_id: string; value_minor: number; serial_number: string; pin: string; allocation: "automated" | "manual"; source_line: number };
 export function parseUatInventory(text: string): InventoryItem[] {
@@ -82,10 +86,21 @@ export function scrubUat(value: unknown, secrets: string[] = [], depth = 0): unk
     return result.replace(/\b(?:\d[ -]?){16,}\b/g, "[REDACTED]").replace(/Basic\s+[A-Za-z0-9+/=]+/gi, "Basic [REDACTED]");
   }
   if (Array.isArray(value)) return value.slice(0, 50).map(item => scrubUat(item, secrets, depth + 1));
-  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).slice(0, 80).map(([key, item]) => [key, /^(pin|password|username|api_password|api_username|authorization|encrypted_pin|encrypted_credentials|api_key)$/i.test(key) ? "[REDACTED]" : scrubUat(item, secrets, depth + 1)]));
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).slice(0, 80).map(([key, item]) => [key, key==="errors"&&Number((value as Record<string,unknown>).status)===400&&item&&typeof item==="object" ? Object.fromEntries(Object.entries(item).map(([field,messages])=>[field,scrubUat(messages,secrets,depth+1)])) : /^(pin|password|username|api_password|api_username|authorization|encrypted_pin|encrypted_credentials|api_key)$/i.test(key) ? "[REDACTED]" : scrubUat(item, secrets, depth + 1)]));
   return value;
 }
-export function evaluateUat(test: UatCase, http: number, data: Record<string, unknown>, reference: string, expectedMinor?: number): { verdict: Verdict; reason: string } {
+export function evaluateUat(test: UatCase, http: number, data: Record<string, unknown>, reference: string, expectedMinor?: number, redemption?: {time:string;reference:string}): { verdict: Verdict; reason: string } {
+  const workbook=WORKBOOK_CASE_IDS.has(test.id),code=Number(data.errorCode??data.status),detail=String(data.detail||data.message||data.title||"");
+  const denial=http>=400&&[5001,5006,5008].includes(code)&&/not.*redeemable|not.*valid.*redemption|product.*not.*available|unsupported|redemption.*not.*allowed/i.test(detail);
+  if(denial) return {verdict:workbook&&["TC-VR-003","TC-VR-004","TC-VR-005","TC-VR-006","TC-VR-008"].includes(test.id)?"pass":workbook?"fail":"review",reason:`Explicit supplier rejection: ${detail} (HTTP ${http}, business code ${code}).`};
+  if(workbook&&["TC-VS-008","TC-VS-009","TC-VS-010","TC-VR-007"].includes(test.id)&&http===400){
+    const field=test.id==="TC-VS-009"?"serialnumber":"pin";
+    const errors=data.errors&&typeof data.errors==="object"?data.errors as Record<string,unknown>:{};
+    if(Object.keys(errors).some(key=>key.toLowerCase()===field))return {verdict:"pass",reason:`Expected ${field==="pin"?"PIN length":"serial number"} validation rejection received (HTTP 400). ${JSON.stringify(errors)}`};
+    if(code===5005)return {verdict:"pass",reason:"Expected validation rejection received."};
+    return {verdict:"fail",reason:"A validation response was received, but the expected field error is missing."};
+  }
+  if(workbook&&["TC-VS-006","TC-VS-007","TC-VR-006"].includes(test.id)&&http===404)return {verdict:"pass",reason:"Expected voucher-not-found rejection received; no voucher value applied."};
   if (!http || http >= 500 || (test.operation === "redeem" && [5003, 5007].includes(Number(data.errorCode)))) return { verdict: test.operation === "redeem" ? "uncertain" : "error", reason: "Provider outcome is incomplete. Retry this execution with its original reference." };
   if (!test.http.includes(http)) {
     if (http === 409 && test.http.includes(403) && Number(data.errorCode) === test.errorCode) return { verdict: "review", reason: "Business error matches, but HTTP 409 differs from the UAT page's HTTP 403. Supplier confirmation required." };
@@ -100,8 +115,14 @@ export function evaluateUat(test: UatCase, http: number, data: Record<string, un
   if (data.clientReference !== reference || typeof data.id !== "string" || !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(data.id) || amount?.currency !== "NAD" || !Number.isSafeInteger(amount.minor) || !Number.isSafeInteger(data.remainingAmount)) return { verdict: "fail", reason: "Receipt reference, transaction ID, NAD currency or amount is invalid." };
   if (expectedMinor !== undefined && amount.minor !== expectedMinor) return { verdict: "fail", reason: "Voucher value does not match this case's NAD value." };
   if (test.state && data.status !== test.state) return { verdict: "blocked", reason: `This case needs a ${test.state} fixture; the provider returned ${String(data.status)}.` };
-  if (test.id.startsWith("TC-VS-") && (!data.productName || typeof data.productName !== "string")) return { verdict: "review", reason: "The workbook expects a product description; it is missing from the provider response." };
+  if (["TC-VS-001","TC-VS-002","TC-VS-004","TC-VS-005"].includes(test.id) && (!data.productName || typeof data.productName !== "string")) return { verdict: "review", reason: "The workbook expects a product description; it is missing from the provider response." };
+  if(test.id==="TC-VS-003") {
+    if(data.remainingAmount!==0)return {verdict:"fail",reason:"The redeemed voucher still has a remaining balance."};
+    const time=String(data.redemptionDate||data.redeemedAt||redemption?.time||""),ref=String(data.collectorReference||data.redemptionReference||redemption?.reference||"");
+    if(!time||!ref)return {verdict:"review",reason:"Redeemed/Consumed with zero balance confirmed. The workbook also requires redemption time and collector reference; no captured redemption record supplies them yet."};
+    return {verdict:"pass",reason:`Redeemed (API: Consumed), zero remaining. Redemption time: ${time}; collector/client reference: ${ref}${redemption?" (from captured PaySME redemption history)":""}.`};
+  }
   if (test.operation === "redeem" && data.remainingAmount !== 0) return { verdict: "fail", reason: "Full redemption did not leave a zero balance." };
   if (test.state === "Active" && (data.remainingAmount !== amount.minor || typeof data.expiryDate !== "string" || Date.parse(data.expiryDate) <= Date.now() || !Number.isFinite(Date.parse(String(data.expiryDate))))) return { verdict: "fail", reason: "Active voucher has an invalid balance or expiry." };
-  return { verdict: test.review ? "review" : "pass", reason: test.review || "Expected provider response verified." };
+  return { verdict: test.review ? "review" : "pass", reason: test.review || (workbook?`Workbook result matched${data.status==="Active"?": New/unused (API: Active)":data.status==="Reversed"?": Spoilt/reversed (API: Reversed)":""}.`:"Expected provider response verified.") };
 }

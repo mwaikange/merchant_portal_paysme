@@ -74,8 +74,8 @@ test('strict evaluation separates passes, supplier review, failures and unknown 
  const ref=crypto.randomUUID(),normal=LESAKA_UAT_CASES.find(c=>c.id==='TC-STAT-01');
  assert.equal(evaluateUat(normal,200,receipt(ref),ref,1000).verdict,'pass');
  assert.equal(evaluateUat(normal,200,receipt(ref,false,{totalAmount:{currency:'ZAR',minor:1000}}),ref,1000).verdict,'fail');
- assert.equal(evaluateUat(LESAKA_UAT_CASES[0],200,receipt(ref),ref,1000).verdict,'review');
- const validation=LESAKA_UAT_CASES.find(c=>c.id==='TC-VS-008');assert.equal(evaluateUat(validation,400,{errors:{pin:['Required']}},ref).verdict,'review');
+ assert.equal(evaluateUat(LESAKA_UAT_CASES[0],200,receipt(ref),ref,1000).verdict,'pass');
+ const validation=LESAKA_UAT_CASES.find(c=>c.id==='TC-VS-008');assert.equal(evaluateUat(validation,400,{errors:{pin:['Required']}},ref).verdict,'pass');
  const redeem=LESAKA_UAT_CASES.find(c=>c.id==='TC-VR-001');for(const [http,body]of [[0,{}],[502,{errorCode:5008}],[409,{errorCode:5003}]])assert.equal(evaluateUat(redeem,http,body,ref).verdict,'uncertain');
 });
 test('encrypted automated PINs are bound to merchant, campaign and voucher identity',async()=>{

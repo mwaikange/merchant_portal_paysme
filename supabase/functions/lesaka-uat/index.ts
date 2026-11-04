@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { decryptLesakaCredentials } from "../_shared/lesaka-credential-storage.ts";
 import { pinFingerprint } from "../_shared/lesaka-4all.ts";
-import { parseUatInventory, scrubUat, LESAKA_UAT_CASES, needsFixture } from "../_shared/lesaka-uat.ts";
+import { parseUatInventory, scrubUat, LESAKA_UAT_CASES, WORKBOOK_CASE_IDS, needsFixture } from "../_shared/lesaka-uat.ts";
 import { encryptUatPin, uatState, UatError, uuid, type Campaign } from "../_shared/lesaka-uat-store.ts";
 import { runUat } from "../_shared/lesaka-uat-runner.ts";
 import { inspectUatSerial } from "../_shared/lesaka-uat-inspect.ts";
@@ -73,13 +73,13 @@ Deno.serve(async req => {
       return json({ok:true,enabled:true,campaign:null,inventory:[],executions:[],customer_attempts:[]});
     }
     if(body.action === "auto_step") {
-      const test=LESAKA_UAT_CASES.find(t=>t.id===body.case_id&&/^TC-(STAT|RED|EDGE)-/.test(t.id));
+      const test=LESAKA_UAT_CASES.find(t=>t.id===body.case_id&&WORKBOOK_CASE_IDS.has(t.id));
       const cycle=Number(body.cycle);
       if(!test||cycle<1||cycle>3||!Number.isInteger(cycle)||!uuid(body.execution_id)||body.confirm_redemption!==true)throw new UatError("Confirm the automated cycle before starting.");
       const snapshot=await uatState(admin,campaign);
       const history=snapshot.executions as Array<{id:string;cycle:number;case_id:string;fixture_id:string;verdict:string;evidence:Array<{operation:string;http_status:number;response:Record<string,unknown>}>}>;
       const existing=history.filter(e=>e.cycle===cycle&&e.case_id===test.id).at(-1);
-      if(existing)return json({ok:true,execution:existing});
+      if(existing&&["pass","running","uncertain","error"].includes(existing.verdict))return json({ok:true,execution:existing});
       const inventory=snapshot.inventory as Array<{id:string;allocation:string;value_minor:number;observed_state:string;locked_by:string|null}>;
       const replay=test.input==="replay"?history.find(e=>e.cycle===cycle&&e.case_id==="TC-RED-01"&&e.verdict==="pass"):null;
       const state=test.state||test.precondition||"Active";
