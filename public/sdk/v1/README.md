@@ -4,6 +4,8 @@
 
 Released 4 November 2026. If you host your own SDK copy, replace that file with this release and keep the filename `paysme.js`. Sites loading the stable PaySME-hosted URL receive v1.13.0 after reload and cache revalidation.
 
+Lesaka voucher digits remain visible while entered in the SDK and hosted checkout. This display fix keeps version 1.13.0; self-hosted SDK copies must be replaced.
+
 Lesaka uses the Lesaka 4All voucher API through PaySME's server. Customers enter a 16-digit voucher PIN, and the server checks that the voucher is Active, unexpired, denominated in `NAD`, and worth exactly the checkout amount before redeeming its full balance. The SDK displays confirmation only after the server verifies redemption and settlement. An uncertain request must be retried with the same voucher for the same checkout.
 
 Each merchant saves their own Lesaka API username and password under **Merchant Portal > API & integration > Facilitator Merchant Codes > Lesaka**, then enables the customer-facing button. Both fields are required and encrypted before database storage; only the backend decrypts them for the matching merchant's payment. Store ID is optional when supplied by Lesaka. The SDK and hosted checkout never receive provider credentials, and the existing `init`, `create` and `pending` integrations need no extra credential parameters or separate Lesaka method. The internal provider/payment-method key remains `kazang` for compatibility, including `methods.kazang` in checkout eligibility. See the [v1.13.0 API integration guide](https://merchant.paysme.site/docs/PaySME_Payment_Modal_API_Integration.md?v=1.13.0) for setup, callbacks, errors and retries.

@@ -2,6 +2,8 @@
 
 ## v1.13.0 - 2026-11-04
 
+- Shows entered Lesaka voucher digits as readable text in the SDK, hosted checkout and manual test recorder. Version remains 1.13.0; replace self-hosted SDK copies to receive this display fix.
+
 - Adds per-business staging voucher uploads and three test methods: automatic API checks, manual portal cases, and normal SDK/hosted checkout with background recording. The portal exports current Excel evidence and provides a guarded Staging/Live switch with test-data cleanup. The v1.13.0 JavaScript file remains compatible and needs no further replacement for these centrally managed controls.
 
 - Releases the merchant-specific Lesaka 4All voucher checkout with the same compatible `init`, `create`, `pending` and Request-to-Pay methods.

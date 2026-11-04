@@ -776,7 +776,7 @@
       panel.innerHTML = '<img class="paysme-provider-logo paysme-provider-logo-kazang" src="' + PROVIDER_LOGOS.kazang + '" alt="Lesaka">' +
         '<h4>Pay with a Lesaka 4All voucher</h4>' +
         '<p>Use a Lesaka 4All voucher from a participating Kazang retailer. Its full balance must be exactly <strong style="color:#fff">N$ ' + esc(Number(cfg.amount_nad || 0).toFixed(2)) + '</strong>. Enter the 16-digit PIN from your receipt.</p>' +
-        '<input class="paysme-provider-code paysme-provider-code-kazang" data-lesaka-pin type="password" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="16-digit PIN" aria-label="Lesaka 4All voucher 16-digit PIN">' +
+        '<input class="paysme-provider-code paysme-provider-code-kazang" data-lesaka-pin type="text" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="16-digit PIN" aria-label="Lesaka 4All voucher 16-digit PIN">' +
         '<div class="paysme-provider-error" role="alert"></div>' +
         '<button class="paysme-btn paysme-btn-kazang" data-lesaka-confirm disabled>Confirm payment</button>' +
         '<button class="paysme-btn paysme-provider-back" data-lesaka-back>Back</button>' + providerBrandHtml();

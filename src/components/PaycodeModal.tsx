@@ -774,7 +774,7 @@ export function PaycodeModal({
                   </p>
                 )}
                 <input
-                  type={mobiWandProvider === "kazang" ? "password" : "text"}
+                  type="text"
                   inputMode="numeric"
                   autoComplete={mobiWandProvider === "kazang" ? "off" : "one-time-code"}
                   maxLength={mobiWandProvider === "kazang" ? 16 : 12}
