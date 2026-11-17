@@ -310,8 +310,8 @@ const HostedPayment = () => {
 
       {/* Payment Form Modal */}
       {showPaymentForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 py-4 sm:px-4 sm:py-3">
-          <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-[390px] overflow-y-auto rounded-lg bg-gray-700 p-4 shadow-2xl sm:max-h-[calc(100dvh-1.5rem)] sm:px-5 sm:py-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 py-4 sm:px-4 sm:py-2">
+          <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-[390px] overflow-y-auto rounded-lg bg-gray-700 p-4 shadow-2xl sm:max-h-[calc(100dvh-1rem)] sm:px-5 sm:py-3">
             {/* Header */}
             <div className="mb-4 text-center sm:mb-3">
               <h3 className="mb-1 text-xl font-bold text-white sm:text-2xl">{merchantData.business_name}</h3>
