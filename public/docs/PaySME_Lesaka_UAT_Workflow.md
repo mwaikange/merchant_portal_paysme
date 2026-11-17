@@ -28,9 +28,9 @@ The recorder reassesses already captured responses without sending more voucher 
 
 ## Submission
 
-Each cycle shows **Excel: x/17 passed**. When all three reach 17/17, the results are ready to download and submit. **Download Excel** includes a cover, Status and Redemption tabs for each cycle with the supplier's original case IDs, descriptions, prerequisites, steps and expected-result columns, followed by Actual Result, Client Reference and Pass/Fail. Separate supporting tabs retain optional checks, customer attempts and redacted technical evidence, including receipt IDs and trace IDs. CSV and full JSON remain available. **Download required Excel cases CSV** is an additional submission export containing only the 17 required Excel IDs for each of three cycles (51 rows), with expected/actual results, references and pass/fail; optional website-guide cases are excluded.
+Each cycle shows **Excel: x/18 passed**. This includes the 17 required workbook cases and the Cancelled voucher status case (TC-STAT-04), listed directly below Reversed. Cancelled and Reversed appear as separate results.
 
-Expired and reversed fixtures are still needed for their corresponding Excel IDs. A cancelled-voucher scenario from the website is optional and does not replace a reversed-voucher Excel test.
+Use **Download Excel** to share completed or partial results with Lesaka. Open cases remain visible in the Status and Redemption tabs for each cycle. Supporting tabs include optional API checks, customer attempts, and redacted evidence. **Download checklist CSV** includes all 18 cases per cycle (54 rows).
 
 ## Live activation and cleanup
 
