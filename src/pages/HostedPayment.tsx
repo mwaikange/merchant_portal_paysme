@@ -310,19 +310,19 @@ const HostedPayment = () => {
 
       {/* Payment Form Modal */}
       {showPaymentForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 py-5 sm:px-4">
-          <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-[390px] overflow-y-auto rounded-lg bg-gray-700 p-4 shadow-2xl sm:p-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 py-4 sm:px-4 sm:py-3">
+          <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-[390px] overflow-y-auto rounded-lg bg-gray-700 p-4 shadow-2xl sm:max-h-[calc(100dvh-1.5rem)] sm:px-5 sm:py-3">
             {/* Header */}
-            <div className="text-center mb-4">
+            <div className="mb-4 text-center sm:mb-3">
               <h3 className="mb-1 text-xl font-bold text-white sm:text-2xl">{merchantData.business_name}</h3>
               <p className="text-gray-300 text-sm">Complete your payment securely with PaySME</p>
             </div>
 
             {/* Payment Info */}
-            <div className="bg-gray-600 rounded p-3 mb-4">
-                <div className="flex justify-between items-center mb-2">
+            <div className="mb-4 rounded bg-gray-600 p-3 sm:mb-3 sm:py-2">
+                <div className="mb-2 flex items-center justify-between gap-2 sm:mb-1">
                   <span className="text-gray-300 text-sm">{qrDetails ? "Product:" : "Invoice ID:"}</span>
-                  <span className="text-white font-semibold">{invoiceId}</span>
+                  <span className="min-w-0 break-words text-right font-semibold text-white">{invoiceId}</span>
                 </div>
                 {qrDetails?.description && (
                   <p className="mb-3 text-sm text-gray-300">{qrDetails.description}</p>
@@ -376,12 +376,12 @@ const HostedPayment = () => {
                     </div>
                   </div>
                 )}
-                <div className="flex justify-between items-center mb-2">
+                <div className="mb-2 flex items-center justify-between gap-2 sm:mb-1">
                   <span className="text-gray-300 text-sm">{taxMode === "vat_exclusive" ? "Price before VAT:" : taxMode === "not_registered" ? "Price:" : qrDetails?.allow_quantity ? "Total:" : "Amount:"}</span>
                   <span className="text-white font-bold">N$ {baseAmount.toFixed(2)}</span>
                 </div>
-                {taxMode !== "not_registered" && <div className="flex justify-between items-center mb-2"><span className="text-gray-300 text-sm">VAT ({vatRate}%) {taxMode === "vat_inclusive" ? "included" : ""}</span><span className="text-white font-semibold">N$ {vatAmount.toFixed(2)}</span></div>}
-                <div className="flex justify-between items-center mb-2 border-t border-white/10 pt-2">
+                {taxMode !== "not_registered" && <div className="mb-2 flex items-center justify-between gap-2 sm:mb-1"><span className="text-gray-300 text-sm">VAT ({vatRate}%) {taxMode === "vat_inclusive" ? "included" : ""}</span><span className="text-white font-semibold">N$ {vatAmount.toFixed(2)}</span></div>}
+                <div className="mb-2 flex items-center justify-between gap-2 border-t border-white/10 pt-2 sm:mb-0 sm:pt-1">
                   <span className="text-gray-300 text-sm">Customer pays:</span>
                   <span className="text-white font-bold">N$ {amount}</span>
                 </div>
@@ -395,12 +395,12 @@ const HostedPayment = () => {
 
             {/* Form */}
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 sm:space-y-2">
                 <FormField
                   control={form.control}
                   name="town"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="sm:space-y-1">
                       <FormLabel className="text-sm text-white">Town</FormLabel>
                       <FormControl>
                         <TownAutocomplete
@@ -422,7 +422,7 @@ const HostedPayment = () => {
                   control={form.control}
                   name="email"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="sm:space-y-1">
                       <FormLabel className="text-white text-sm">Email Address</FormLabel>
                       <FormControl>
                         <Input
@@ -441,7 +441,7 @@ const HostedPayment = () => {
                   control={form.control}
                   name="mobile"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="sm:space-y-1">
                       <FormLabel className="text-white text-sm">Mobile Number</FormLabel>
                       <FormControl>
                         <Input
@@ -458,7 +458,7 @@ const HostedPayment = () => {
 
                 <Button 
                   type="submit" 
-                  className="mb-4 h-11 w-full rounded bg-blue-600 py-2 text-base font-semibold text-white hover:bg-blue-700 sm:h-10 sm:text-sm"
+                  className="h-11 w-full rounded bg-blue-600 py-2 text-base font-semibold text-white hover:bg-blue-700 sm:h-10 sm:text-sm"
                   disabled={loading || form.formState.isSubmitting}
                 >
                   {loading || form.formState.isSubmitting ? (
@@ -474,12 +474,12 @@ const HostedPayment = () => {
             </Form>
 
             {/* Powered by footer */}
-            <div className="text-center">
-              <p className="text-gray-300 text-sm mb-1">Powered by</p>
+            <div className="mt-3 flex items-center justify-center gap-2 sm:mt-2">
+              <p className="text-xs text-gray-300">Powered by</p>
               <img
                 src={paysmeLogoSmall}
                 alt="PaySME - Bridging Wallets, Apps & Websites"
-                className="w-24 h-auto mx-auto"
+                className="h-6 w-auto max-w-20 object-contain"
               />
             </div>
           </div>

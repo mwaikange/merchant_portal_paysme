@@ -16,6 +16,7 @@ type State = { customer_attempts:CustomerAttempt[]; enabled: boolean; credential
 const empty: State = { enabled: false, campaign: null, customer_attempts: [], inventory: [], executions: [] };
 const label = (value: string) => ({ pass: "Passed", fail: "Failed", review: "Needs review", blocked: "Blocked", uncertain: "Uncertain", error: "Error", running: "Running", pending: "Not run" }[value] || value);
 const requiredCases = LESAKA_REQUIRED_CASES;
+const voucherStateCases = new Set(["TC-VS-004", "TC-VS-005", "TC-VR-004", "TC-VR-005"]);
 const providerIds = (run: Execution, key: "traceId" | "id") => [...new Set(run.evidence.filter(call => key === "traceId" || call.operation === "redeem" && call.http_status === 200).map(call => call.response[key]).filter((value): value is string => typeof value === "string" && Boolean(value)))];
 const colour = (value: string) => value === "pass" ? "text-emerald-300" : ["fail", "error"].includes(value) ? "text-red-300" : "text-yellow-200";
 const csvCell = (value: unknown) => { let s = typeof value === "string" ? value : JSON.stringify(value ?? ""); if (/^[=+@-]/.test(s)) s = "'" + s; return '"' + s.replaceAll('"', '""') + '"'; };
@@ -51,6 +52,9 @@ export function LesakaUatPanel({ merchantId, apiKey }: { merchantId: string; api
   const latest = useMemo(() => {
     const map = new Map<string, Execution>();
     for (const run of state.executions) map.set(`${run.cycle}:${run.case_id}`, run);
+    for (const [key, run] of map) {
+      if (run.verdict === "blocked" && voucherStateCases.has(run.case_id)) map.delete(key);
+    }
     return map;
   }, [state.executions]);
   const test = LESAKA_UAT_CASES.find(item => item.id === caseId)!;
@@ -170,6 +174,7 @@ export function LesakaUatPanel({ merchantId, apiKey }: { merchantId: string; api
         <div className="space-y-3 rounded-md border border-white/15 p-3">
           <div><Label htmlFor="lesaka-uat-case">Test case</Label><select id="lesaka-uat-case" className="mt-1 h-10 w-full rounded-md border px-2 text-sm" value={caseId} disabled={busy} onChange={e => { setCaseId(e.target.value); setPin(""); setConfirmed(false); setReplayOf(""); }}><optgroup label="Required Excel workbook">{requiredCases.map(item => <option key={item.id} value={item.id}>{item.id} · {item.title}</option>)}</optgroup><optgroup label="Optional website-guide checks - not required for submission">{LESAKA_UAT_CASES.filter(item=>!WORKBOOK_CASE_IDS.has(item.id)).map(item=><option key={item.id} value={item.id}>{item.id} · {item.title}</option>)}</optgroup></select></div>
           <p className="text-sm text-white/75">Expected: {test.expected}</p>
+          {voucherStateCases.has(test.id) && <p className="text-xs text-white/65">Choose a voucher Lesaka has marked {test.state ?? test.precondition}. Earlier blocked attempts are kept in execution history.</p>}
           {test.blocked ? <p className="rounded-md border border-yellow-400/30 p-2 text-sm text-yellow-200">{test.blocked}</p> : <>
             <div><Label htmlFor="lesaka-uat-mode">Voucher allocation</Label><select id="lesaka-uat-mode" className="mt-1 h-10 w-full rounded-md border px-2 text-sm" value={mode} disabled={busy} onChange={e => { setMode(e.target.value as typeof mode); setFixtureId(""); setPin(""); setConfirmed(false); }}><option value="manual">My reserved manual vouchers</option><option value="automated">Automated-test allocation</option></select></div>
             {needsFixture(test) ? <>
