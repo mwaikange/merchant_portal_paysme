@@ -89,6 +89,43 @@ Deno.serve(async req => {
       const request={...body,confirm_redemption:technical?true:body.confirm_redemption,mode:"automated",fixture_id:fixture?.id||null,replay_of:replay?.id||null,fixture_unavailable:needsFixture(test)&&(!fixture||test.input==="replay"&&!replay)};
       return json({ok:true,execution:await runUat(request,{admin,campaign,setup:setup.data,userId,service:true,env:key=>merchantMode.env(key)||""})});
     }
+    if (body.action === "register_manual_fixture") {
+      if (!service) throw new UatError("Service authorization is required.", 403);
+      if (!campaign.inventory_sha256) throw new UatError("Import the original voucher allocation first.", 409);
+      const { serial_number, pin, expected_state, source_line } = body;
+      if (typeof serial_number !== "string" || !/^\d{12}$/.test(serial_number) ||
+          typeof pin !== "string" || !/^\d{16}$/.test(pin) ||
+          (expected_state !== "Expired" && expected_state !== "Reversed") ||
+          typeof source_line !== "number" || !Number.isSafeInteger(source_line) || source_line < 1 || source_line > 200) {
+        throw new UatError("Provide a supplier-confirmed expired or reversed fixture and its source line.");
+      }
+      const existing = await admin.from("lesaka_uat_inventory").select("id,fixture_id,value_minor,pin_fingerprint,allocation")
+        .eq("campaign_id", campaign.id).eq("serial_number", serial_number).maybeSingle();
+      if (existing.error) throw existing.error;
+      const fingerprint = await pinFingerprint(pin, env("LESAKA_4ALL_FINGERPRINT_SECRET"));
+      if (existing.data && existing.data.pin_fingerprint !== fingerprint) {
+        throw new UatError("The supplied PIN differs from the original allocation for this serial.", 409);
+      }
+      const credentials = await decryptLesakaCredentials(setup.data.encrypted_credentials, merchantId, "staging", env);
+      const inspection = await inspectUatSerial({ id: existing.data?.id || crypto.randomUUID(), serial_number, value_minor: existing.data?.value_minor }, credentials, setup.data.store_id);
+      const amount = inspection.response.totalAmount as { currency: string; minor: number } | undefined;
+      const summary = { http_status: inspection.http_status, state: inspection.observed_state, amount: inspection.valid ? amount : null, client_reference: inspection.client_reference };
+      if (!inspection.valid || inspection.observed_state !== expected_state || !amount) return json({ ok: true, ...summary, ready: false });
+      if (existing.data) {
+        const updated = await admin.from("lesaka_uat_inventory").update({ observed_state: expected_state })
+          .eq("id", existing.data.id).eq("campaign_id", campaign.id);
+        if (updated.error) throw updated.error;
+        return json({ ok: true, ...summary, ready: true, fixture: existing.data.fixture_id, allocation: existing.data.allocation });
+      }
+      const fixture = `Email ${expected_state} · ${serial_number.slice(-4)}`;
+      const inserted = await admin.from("lesaka_uat_inventory").insert({
+        campaign_id: campaign.id, fixture_id: fixture, serial_number, pin_fingerprint: fingerprint,
+        value_minor: amount.minor, source_line, observed_state: expected_state, allocation: "manual",
+      });
+      if (inserted.error?.code === "23505") throw new UatError("This fixture already exists. Check the existing allocation.", 409);
+      if (inserted.error) throw inserted.error;
+      return json({ ok: true, ...summary, ready: true, fixture, allocation: "manual" });
+    }
     if (body.action === "inspect") {
       // Discovery is read-only, including the reserved half. Redemption keeps
       // its existing allocation restrictions in runUat.
