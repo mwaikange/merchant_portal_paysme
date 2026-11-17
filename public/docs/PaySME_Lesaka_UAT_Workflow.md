@@ -1,6 +1,6 @@
 # Lesaka - supplier Excel test workflow
 
-The required submission checklist is **PaySME_Test_Cases.xlsx**: **10 Voucher Status Check cases (TC-VS-001 to TC-VS-010)** and **8 Voucher Redemption cases (TC-VR-001 to TC-VR-008)**. Complete those 18 cases in each of the three cycles required by Lesaka's email. The additional website-guide cases are optional and never add submission requirements.
+The required submission checklist is **PaySME_Test_Cases.xlsx**: **10 Voucher Status Check cases (TC-VS-001 to TC-VS-010)** and **7 Voucher Redemption cases (TC-VR-001 to TC-VR-007)**. Lesaka waived the unsupported-product case (TC-VR-008). Complete the 17 required cases in each of the three cycles required by Lesaka's email. The additional website-guide cases are optional and never add submission requirements.
 
 ## Prepare this business
 
@@ -10,7 +10,7 @@ Save this business's staging credentials in its Lesaka card, open **Lesaka stagi
 
 - **Payment modal / hosted page:** start the cycle's customer session and enter only the 16-digit voucher PIN in normal checkout. PaySME captures references and responses in the background and maps demonstrated calls to the matching Excel IDs. Use a new checkout when testing a different voucher. Repeating a completed checkout returns the earlier result without another redemption or test pass.
 - **Manual portal tests:** choose a required Excel ID and run the case. Blank and too-long-PIN cases generate controlled invalid requests; normal checkout still accepts exactly 16 digits. The optional 15-digit website-guide case is available separately.
-- **Automatic tests:** run the 18 required Excel cases that have not passed. Automation uses only its allocated half, blocks cases lacking suitable fixtures and stops for uncertain outcomes.
+- **Automatic tests:** run the 17 required Excel cases that have not passed. Automation uses only its allocated half, blocks cases lacking suitable fixtures and stops for uncertain outcomes.
 
 ## Dedicated technical checks
 
@@ -28,11 +28,11 @@ The recorder reassesses already captured responses without sending more voucher 
 
 ## Submission
 
-Each cycle shows **Excel: x/18 passed**. When all three reach 18/18, the results are ready to download and submit. **Download Excel** includes a cover, Status and Redemption tabs for each cycle with the supplier's original case IDs, descriptions, prerequisites, steps and expected-result columns, followed by Actual Result, Client Reference and Pass/Fail. Separate supporting tabs retain optional checks, customer attempts and redacted technical evidence, including receipt IDs and trace IDs. CSV and full JSON remain available. **Download required Excel cases CSV** is an additional submission export containing only the original 18 Excel IDs for each of three cycles (54 rows), with expected/actual results, references and pass/fail; optional website-guide cases are excluded.
+Each cycle shows **Excel: x/17 passed**. When all three reach 17/17, the results are ready to download and submit. **Download Excel** includes a cover, Status and Redemption tabs for each cycle with the supplier's original case IDs, descriptions, prerequisites, steps and expected-result columns, followed by Actual Result, Client Reference and Pass/Fail. Separate supporting tabs retain optional checks, customer attempts and redacted technical evidence, including receipt IDs and trace IDs. CSV and full JSON remain available. **Download required Excel cases CSV** is an additional submission export containing only the 17 required Excel IDs for each of three cycles (51 rows), with expected/actual results, references and pass/fail; optional website-guide cases are excluded.
 
-Expired, reversed and unsupported-product fixtures are still needed for their corresponding Excel IDs. A cancelled-voucher scenario from the website is optional and does not replace a reversed-voucher Excel test.
+Expired and reversed fixtures are still needed for their corresponding Excel IDs. A cancelled-voucher scenario from the website is optional and does not replace a reversed-voucher Excel test.
 
 ## Live activation and cleanup
 
-After the 18 Excel cases pass in all three cycles, export the evidence, obtain Lesaka's approval, save live credentials separately and use the Lesaka card's Live switch. No SDK upload or URL change is needed. Live activation and cleanup refuse unresolved payments. Test checkouts remain permanently excluded from live settlement and reporting; cleanup removes only this business's test campaign and voucher inventory.
+After the 17 Excel cases pass in all three cycles, export the evidence, obtain Lesaka's approval, save live credentials separately and use the Lesaka card's Live switch. No SDK upload or URL change is needed. Live activation and cleanup refuse unresolved payments. Test checkouts remain permanently excluded from live settlement and reporting; cleanup removes only this business's test campaign and voucher inventory.
 Selecting a cycle tab does not reassign existing customer checkouts. If a different cycle's session is active, the portal blocks new checkout buttons and asks you to start customer testing for the selected cycle. Create a new checkout after switching; older links and results retain their original cycle.

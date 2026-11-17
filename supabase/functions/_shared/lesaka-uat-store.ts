@@ -49,7 +49,10 @@ export async function uatState(admin: SupabaseClient, campaign: Campaign | null)
     const page = await admin.from("lesaka_uat_executions").select("*,lesaka_uat_notes(*)").eq("campaign_id", campaign.id).order("started_at", { ascending: true }).order("id").range(offset, offset + 499);
     if (page.error) throw page.error;
     executions.push(...(page.data || []));
-    if ((page.data || []).length < 500) return { campaign, inventory: result.data || [], executions:await reconcileWorkbookEvidence(admin,campaign.id,executions as Execution[],result.data||[]), customer_attempts: customers };
+    if ((page.data || []).length < 500) {
+      const assessed = await reconcileWorkbookEvidence(admin, campaign.id, executions as Execution[], result.data || []);
+      return { campaign, inventory: result.data || [], executions: assessed.filter(run => run.case_id !== "TC-VR-008"), customer_attempts: customers };
+    }
   }
   throw new UatError("Campaign exceeds the evidence export limit. Contact PaySME support.", 409);
 }

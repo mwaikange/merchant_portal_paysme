@@ -118,13 +118,6 @@ export const LESAKA_WORKBOOK_ROWS = [
     "preconditions": "Collector portal active",
     "steps": "1. Navigate to Redeem Voucher\n2. Leave PIN field empty\n3. Submit",
     "expected": "Validation error: 'PIN must be a string with a length of 16 digits'"
-  },
-  {
-    "id": "TC-VR-008",
-    "description": "Redemption \u2014 Voucher from unsupported / inactive product",
-    "preconditions": "Collector portal active; voucher from a product that has since been disabled",
-    "steps": "1. Navigate to Redeem Voucher\n2. Enter PIN and serial from disabled product\n3. Submit",
-    "expected": "Redemption declined; error: 'Product not available' or 'Voucher not valid for redemption'; no credit issued"
   }
 ];
 export const WORKBOOK_CASE_IDS = new Set(LESAKA_WORKBOOK_ROWS.map(row => row.id));

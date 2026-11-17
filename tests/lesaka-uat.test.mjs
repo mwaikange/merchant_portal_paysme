@@ -48,8 +48,9 @@ function gateway(admin,redeem){let consumed=false;const calls=[];return{calls,tr
  return Response.json(receipt(body.clientReference,consumed));
  }};}
 const context=(admin,transport,extra={})=>({admin,campaign,setup,service:true,userId:null,env,transport,...extra});
-test('catalog covers all 18 workbook and 12 website cases without guessing an amount field',()=>{
- assert.equal(LESAKA_UAT_CASES.length,30);assert.equal(new Set(LESAKA_UAT_CASES.map(c=>c.id)).size,30);
+test('catalog covers all 17 workbook and 12 website cases without guessing an amount field',()=>{
+ assert.equal(LESAKA_UAT_CASES.length,29);assert.equal(new Set(LESAKA_UAT_CASES.map(c=>c.id)).size,29);
+ assert(!LESAKA_UAT_CASES.some(c=>c.id==='TC-VR-008'));
  assert(LESAKA_UAT_CASES.find(c=>c.id==='TC-RED-05').blocked);
 });
 test('original ordering reserves at least half of every denomination, including odd counts',()=>{

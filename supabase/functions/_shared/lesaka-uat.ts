@@ -26,7 +26,6 @@ export const LESAKA_UAT_CASES: UatCase[] = [
   c("TC-VR-005", "Reject a reversed voucher", "redeem", "pin", "RedemptionNotAllowed", { http: [403], errorCode: 5001, precondition: "Reversed" }),
   c("TC-VR-006", "Reject an unknown PIN", "redeem", "unknown-pin", "Voucher not found or not redeemable", { http: [404, 403, 409], errorCode: 5001 }),
   c("TC-VR-007", "Reject a blank PIN", "redeem", "blank-pin", "PIN validation error", { http: [400], errorCode: 5005 }),
-  c("TC-VR-008", "Reject an unsupported product", "redeem", "pin", "Product unavailable; no credit issued", { http: [403, 409], errorCode: 5001, precondition: "Unsupported" }),
   c("TC-STAT-01", "API: active voucher by PIN", "status", "pin", "HTTP 200, Active, NAD and a valid balance", { state: "Active" }),
   c("TC-STAT-02", "API: active voucher by serial", "status", "serial", "HTTP 200, Active; compare with PIN query", { state: "Active" }),
   c("TC-STAT-03", "API: expired voucher", "status", "pin", "HTTP 200, Expired", { state: "Expired" }),
@@ -95,7 +94,7 @@ export function scrubUat(value: unknown, secrets: string[] = [], depth = 0): unk
 export function evaluateUat(test: UatCase, http: number, data: Record<string, unknown>, reference: string, expectedMinor?: number, redemption?: {time:string;reference:string}): { verdict: Verdict; reason: string } {
   const workbook=WORKBOOK_CASE_IDS.has(test.id),code=Number(data.errorCode??data.status),detail=String(data.detail||data.message||data.title||"");
   const denial=http>=400&&[5001,5006,5008].includes(code)&&/not.*redeemable|not.*valid.*redemption|product.*not.*available|unsupported|redemption.*not.*allowed/i.test(detail);
-  if(denial) return {verdict:workbook&&["TC-VR-003","TC-VR-004","TC-VR-005","TC-VR-006","TC-VR-008"].includes(test.id)?"pass":workbook?"fail":"review",reason:`Explicit supplier rejection: ${detail} (HTTP ${http}, business code ${code}).`};
+  if(denial) return {verdict:workbook&&["TC-VR-003","TC-VR-004","TC-VR-005","TC-VR-006"].includes(test.id)?"pass":workbook?"fail":"review",reason:`Explicit supplier rejection: ${detail} (HTTP ${http}, business code ${code}).`};
   if((workbook&&["TC-VS-008","TC-VS-009","TC-VS-010","TC-VR-007"].includes(test.id)||test.id==="TC-EDGE-02")&&http===400){
     const field=test.id==="TC-VS-009"?"serialnumber":"pin";
     const errors=data.errors&&typeof data.errors==="object"?data.errors as Record<string,unknown>:{};

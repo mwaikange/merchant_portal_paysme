@@ -13,8 +13,8 @@ test('technical checks can only query a serial or submit synthetic invalid input
  }
  for(const id of ['TC-VR-001','TC-VR-002','TC-RED-01'])assert.equal(isTechnicalUatCase(id),false);
 });
-test('only the 18 supplier Excel case IDs are required; state aliases do not force review',()=>{
- assert.equal(LESAKA_REQUIRED_CASES.length,18);assert(LESAKA_REQUIRED_CASES.every(row=>/^TC-V[SR]-/.test(row.id)&&!row.review));
+test('only the 17 required supplier Excel case IDs are required; state aliases do not force review',()=>{
+ assert.equal(LESAKA_REQUIRED_CASES.length,17);assert(LESAKA_REQUIRED_CASES.every(row=>/^TC-V[SR]-/.test(row.id)&&!row.review));
  assert.equal(evaluateUat(byId('TC-VS-001'),200,active,ref,100000).verdict,'pass');
  assert.equal(evaluateUat(byId('TC-VS-004'),200,{...active,status:'Reversed'},ref,100000).verdict,'pass');
  assert.equal(evaluateUat(byId('TC-VS-001'),200,{...active,productName:undefined},ref,100000).verdict,'review');

@@ -96,17 +96,13 @@ export async function runUat(body: Record<string, unknown>, context: Context) {
     let preflight: Evidence;
     try { preflight = await call("status", { pin, clientReference: crypto.randomUUID(), requestTime: now(), ...(setup.store_id ? { storeId: setup.store_id } : {}) }); }
     catch { return await finish("error", "Preflight evidence could not be saved. No redemption was sent."); }
-    if (test.precondition === "Unsupported") {
-      if (Number(preflight.response.errorCode) !== 5006) return await finish("blocked", "A supplier-confirmed unsupported-product fixture is required. No redemption was sent.");
-    } else {
-      if (preflight.http_status !== 200) return await finish("blocked", "Could not verify the voucher's required state. No redemption was sent.");
-      const actual = preflight.response.status;
-      await admin.from("lesaka_uat_inventory").update({ observed_state: String(actual || "Unknown") }).eq("id", fixture.id);
-      if (actual !== test.precondition) return await finish("blocked", `This case needs ${test.precondition}; the selected voucher is ${String(actual)}. No redemption was sent.`);
-      const amount = preflight.response.totalAmount as { currency?: string; minor?: number } | undefined;
-      if (amount?.currency !== "NAD" || amount.minor !== fixture.value_minor) return await finish("blocked", "Voucher does not match its allocated NAD value. No redemption was sent.");
-      if (test.precondition === "Active" && (preflight.response.remainingAmount !== fixture.value_minor || !Number.isFinite(Date.parse(String(preflight.response.expiryDate))) || Date.parse(String(preflight.response.expiryDate)) <= Date.now())) return await finish("blocked", "Voucher balance or expiry is unsuitable for a full-value redemption. No redemption was sent.");
-    }
+    if (preflight.http_status !== 200) return await finish("blocked", "Could not verify the voucher's required state. No redemption was sent.");
+    const actual = preflight.response.status;
+    await admin.from("lesaka_uat_inventory").update({ observed_state: String(actual || "Unknown") }).eq("id", fixture.id);
+    if (actual !== test.precondition) return await finish("blocked", `This case needs ${test.precondition}; the selected voucher is ${String(actual)}. No redemption was sent.`);
+    const amount = preflight.response.totalAmount as { currency?: string; minor?: number } | undefined;
+    if (amount?.currency !== "NAD" || amount.minor !== fixture.value_minor) return await finish("blocked", "Voucher does not match its allocated NAD value. No redemption was sent.");
+    if (test.precondition === "Active" && (preflight.response.remainingAmount !== fixture.value_minor || !Number.isFinite(Date.parse(String(preflight.response.expiryDate))) || Date.parse(String(preflight.response.expiryDate)) <= Date.now())) return await finish("blocked", "Voucher balance or expiry is unsuitable for a full-value redemption. No redemption was sent.");
   }
   const payload = uatRequest(test, fixture ? { pin, serial_number: fixture.serial_number } : null, run.client_reference, run.request_time, setup.store_id || undefined);
   if (test.operation === "redeem" && !run.redemption_started) {

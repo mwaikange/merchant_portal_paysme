@@ -16,7 +16,7 @@ function assess(run:Recorded,history:Recorded[],inventory:Fixture[]) {
  if(!test||!call||!call.finished_at||run.verdict==="running")return null;
  const fixture=inventory.find(item=>item.id===run.fixture_id);
  if(test.precondition){const preflight=run.evidence.find(item=>item.operation==="status"&&item.http_status===200);
-  if(test.precondition!=="Unsupported"&&preflight?.response.status!==test.precondition)return null;
+  if(preflight?.response.status!==test.precondition)return null;
  }
  return evaluateUat(test,call.http_status,call.response,call.client_reference,test.amountMinor??fixture?.value_minor,redemptionFor(run,history,inventory));
 }
