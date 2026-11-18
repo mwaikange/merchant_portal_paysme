@@ -9,7 +9,14 @@ type ReturnApp = {
 };
 
 // Each app's invoice IDs start with its registered prefix followed by a hyphen.
-const returnApps: readonly ReturnApp[] = [];
+const returnApps: readonly ReturnApp[] = [
+  {
+    invoicePrefix: "SEEKGRN",
+    name: "SeekGRNJobs",
+    icon: "https://seek-grn.vercel.app/icon.svg",
+    openUrl: "https://seek-grn.vercel.app/#subscription",
+  },
+];
 
 const paysmeLogo = "/lovable-uploads/898057d0-cfa9-48a0-8977-fa341f10e70b.png";
 
