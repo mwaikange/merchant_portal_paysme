@@ -10,6 +10,7 @@ const PaymentFailed = () => {
   const errorCode = searchParams.get("error_code") || "";
   const errorMessage = searchParams.get("error_message") || searchParams.get("_ERROR_MESSAGE") || "";
   const generatedCode = searchParams.get("generated_code") || "";
+  const invoiceId = searchParams.get("invoice_id") || "";
   const origin = searchParams.get("origin") || "";
 
   const displayRef = mref !== "N/A" ? mref : "N/A";
@@ -19,6 +20,7 @@ const PaymentFailed = () => {
     url.searchParams.set("status", "cancelled");
     if (mref !== "N/A") url.searchParams.set("mref", mref);
     if (generatedCode) url.searchParams.set("generated_code", generatedCode);
+    if (invoiceId) url.searchParams.set("invoice_id", invoiceId);
     if (errorCode) url.searchParams.set("error_code", errorCode);
     return url.toString();
   };

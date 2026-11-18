@@ -27,6 +27,7 @@ import TaxSettings from "./pages/TaxSettings";
 import SecurityAccess from "./pages/SecurityAccess";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailed from "./pages/PaymentFailed";
+import PaymentReturn from "./pages/PaymentReturn";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import VendorSignup from "./pages/VendorSignup";
@@ -124,6 +125,7 @@ const App = () => (
             <Route path="/b/:basketSlug" element={<HostedBasketPayment />} />
             <Route path="/payment/success" element={<PublicBrand><PaymentSuccess /></PublicBrand>} />
             <Route path="/payment/failed" element={<PublicBrand><PaymentFailed /></PublicBrand>} />
+            <Route path="/payment/return" element={<PaymentReturn />} />
             <Route path="/reset-password" element={<PublicBrand><ResetPassword /></PublicBrand>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<PublicBrand><NotFound /></PublicBrand>} />
