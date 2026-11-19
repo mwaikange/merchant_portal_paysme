@@ -14,7 +14,7 @@ const returnApps: readonly ReturnApp[] = [
     invoicePrefix: "SEEKGRN",
     name: "SeekGRNJobs",
     icon: "https://seek-grn.vercel.app/icon.svg",
-    openUrl: "https://seek-grn.vercel.app/#subscription",
+    openUrl: "https://seek.paysme.site/#subscription",
   },
 ];
 
