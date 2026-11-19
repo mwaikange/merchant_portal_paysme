@@ -35,6 +35,99 @@ async function sha256(value: string): Promise<string> {
     .join("");
 }
 
+const SEEKGRN_MERCHANT_ID = "00000000-1986-0026-0000-000000000001";
+const SEEKGRN_WEBHOOK_URL = "https://seek.paysme.site/api/paysme-webhook";
+
+function isSeekGrnPayment(tx: Record<string, unknown>) {
+  return tx.merchant_id === SEEKGRN_MERCHANT_ID && tx.is_test === false &&
+    /^(?:SEEKGRN-[A-F0-9]{7}|SG-[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/i.test(String(tx.invoice_id || ""));
+}
+
+async function sendSeekGrnWebhook(event: Record<string, unknown>, secret: string) {
+  const encoder = new TextEncoder();
+  const body = encoder.encode(JSON.stringify(event));
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), {
+    name: "HMAC", hash: "SHA-256",
+  }, false, ["sign"]);
+  const signature = await crypto.subtle.sign("HMAC", key, body);
+  const hex = Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const response = await fetch(SEEKGRN_WEBHOOK_URL, {
+    method: "POST",
+    redirect: "error",
+    signal: AbortSignal.timeout(4000),
+    headers: {
+      "Content-Type": "application/json",
+      "x-paysme-signature": "sha256=" + hex,
+    },
+    body,
+  });
+  const result = response.status === 200 ? await response.json().catch(() => null) : null;
+  return { status: response.status, result };
+}
+
+async function deliverSeekGrnPaid(tx: Record<string, unknown>, amount: number) {
+  const secret = Deno.env.get("SEEKGRN_WEBHOOK_SECRET");
+  if (!secret) {
+    console.error("SeekGRN signing secret is not configured:", tx.transaction_id);
+    return;
+  }
+  const event = {
+    event: "payment.paid",
+    status: "paid",
+    invoice_id: tx.invoice_id,
+    transaction_id: tx.transaction_id,
+    merchant_id: tx.merchant_id,
+    amount,
+    currency: "NAD",
+    generated_code: tx.generated_code,
+  };
+
+  for (const delay of [0, 750, 2500]) {
+    if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+    try {
+      const { status, result } = await sendSeekGrnWebhook(event, secret);
+      if (result?.ok === true) {
+        console.info("SeekGRN paid webhook acknowledged:", tx.transaction_id);
+        return;
+      }
+      console.warn("SeekGRN paid webhook not accepted:", tx.transaction_id, status);
+      if (![408, 425, 429].includes(status) && status < 500) break;
+    } catch (error) {
+      console.warn("SeekGRN paid webhook transport error:", tx.transaction_id,
+        error instanceof Error ? error.name : "UnknownError");
+    }
+  }
+  console.error("SeekGRN paid webhook delivery failed:", tx.transaction_id);
+}
+
+async function dispatchSeekGrnPaid(tx: Record<string, unknown>, amount: number) {
+  const delivery = deliverSeekGrnPaid(tx, amount);
+  const runtime = (globalThis as typeof globalThis & {
+    EdgeRuntime?: { waitUntil(task: Promise<void>): void };
+  }).EdgeRuntime;
+  if (runtime) runtime.waitUntil(delivery);
+  else await delivery;
+}
+
+async function handleSeekGrnProbe(req: Request) {
+  const reply = (status: number, result: Record<string, unknown>) => new Response(JSON.stringify(result), {
+    status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!serviceKey || req.headers.get("authorization") !== `Bearer ${serviceKey}`) {
+    return reply(403, { error: "Forbidden" });
+  }
+  const secret = Deno.env.get("SEEKGRN_WEBHOOK_SECRET");
+  if (!secret) return reply(503, { error: "SEEKGRN_WEBHOOK_SECRET is not configured" });
+  try {
+    const { status, result } = await sendSeekGrnWebhook({ event: "seekgrn.webhook_probe" }, secret);
+    if (status === 200 && result?.ignored === true) return reply(200, { ignored: true });
+    return reply(502, { error: "SeekGRN probe was not accepted", downstream_status: status });
+  } catch {
+    return reply(502, { error: "SeekGRN probe could not reach the receiver" });
+  }
+}
+
 function providerPaymentMethod(providerName: string) {
   const normalized = String(providerName || "").toLowerCase().replace(/[^a-z0-9]+/g, "_");
   if (normalized.includes("paypulse") || normalized.includes("pay_pulse")) return "paypulse";
@@ -109,6 +202,10 @@ serve(async (req: Request) => {
 
     const rawBody = await req.text();
     const payload = JSON.parse(rawBody);
+
+    if (payload.action === "internal_seekgrn_webhook_probe") {
+      return await handleSeekGrnProbe(req);
+    }
 
     const providerName = payload.payment_provider || headers["x-provider-name"] || payload.provider || "Unknown";
     console.log(`Processing webhook from provider: ${providerName}`);
@@ -336,7 +433,9 @@ serve(async (req: Request) => {
         .eq("merchant_id", tx.merchant_id)
         .single();
 
-      if (merchantData?.webhook_url) {
+      if (isSeekGrnPayment(tx)) {
+        await dispatchSeekGrnPaid(tx, txAmount);
+      } else if (merchantData?.webhook_url) {
         const merchantPayload = {
           paySMECode:     tx.generated_code,
           generated_code: tx.generated_code,
@@ -573,7 +672,9 @@ serve(async (req: Request) => {
 
       console.log("Merchant webhook_url:", merchantData?.webhook_url);
 
-      if (merchantData?.webhook_url) {
+      if (isSeekGrnPayment(existingTransaction)) {
+        await dispatchSeekGrnPaid(existingTransaction, Number(amount || existingTransaction.amount));
+      } else if (merchantData?.webhook_url) {
         const merchantPayload = {
           paySMECode:     existingTransaction.generated_code,
           generated_code: existingTransaction.generated_code,
