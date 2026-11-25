@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
-import { encryptLesakaCredentials } from "../_shared/lesaka-credential-storage.ts";
-import { LesakaError } from "../_shared/lesaka-4all.ts";
+import { decryptLesakaCredentials, encryptLesakaCredentials } from "../_shared/lesaka-credential-storage.ts";
+import { LesakaError, lesakaRequest, voucherPin } from "../_shared/lesaka-4all.ts";
 import { merchantLesakaEnv } from "../_shared/lesaka-integration-mode.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
@@ -34,7 +34,58 @@ Deno.serve(async (req) => {
     if(enrolled.error) throw enrolled.error;
     const mode = await merchantLesakaEnv(admin,merchantId,key=>Deno.env.get(key));
     const environment=mode.environment;
-    if (body.action !== "status" && body.environment !== environment) return json({ error: "Lesaka setup has changed. Reload this page before saving." }, 409);
+    if (body.action !== "status" && body.action !== "lookup_live_voucher_values" && body.environment !== environment) return json({ error: "Lesaka setup has changed. Reload this page before saving." }, 409);
+
+    if (body.action === "lookup_live_voucher_values") {
+      const rawPins = Array.isArray(body.pins) ? body.pins : [];
+      if (rawPins.length < 1 || rawPins.length > 10) return json({ error: "Enter between 1 and 10 voucher PINs." }, 400);
+      const liveRecord = await admin.from("lesaka_merchant_credentials")
+        .select("encrypted_credentials, store_id").eq("merchant_id", merchantId).eq("environment", "production").maybeSingle();
+      if (liveRecord.error) throw liveRecord.error;
+      if (!liveRecord.data) return json({ error: "Save this merchant's live Lesaka credentials in API & integration first." }, 409);
+      const credentials = await decryptLesakaCredentials(liveRecord.data.encrypted_credentials, merchantId, "production", key => Deno.env.get(key));
+      const pins = rawPins.map((value: unknown) => voucherPin(value));
+      const config = {
+        environment: "production" as const,
+        baseUrl: "https://bridge.lesaka.tech/virtual-products",
+        username: credentials.api_username,
+        password: credentials.api_password,
+        fingerprintSecret: "",
+      };
+      const results = [];
+      for (const pin of pins) {
+        try {
+          const response = await lesakaRequest(config, "status", {
+            pin,
+            clientReference: crypto.randomUUID(),
+            requestTime: new Date().toISOString(),
+            ...(liveRecord.data.store_id ? { storeId: liveRecord.data.store_id } : {}),
+          }) as Record<string, unknown>;
+          const total = response?.totalAmount as Record<string, unknown> | undefined;
+          const currency = typeof total?.currency === "string" ? total.currency : "";
+          const totalMinor = Number(total?.minor);
+          const remainingMinor = Number(response?.remainingAmount);
+          if (!Number.isSafeInteger(totalMinor) || !Number.isSafeInteger(remainingMinor) || !currency) {
+            throw new LesakaError("Lesaka returned an incomplete voucher balance.", 502, "lesaka_incomplete_status");
+          }
+          results.push({
+            pin_last4: pin.slice(-4),
+            status: typeof response?.status === "string" ? response.status : "Unknown",
+            currency,
+            total_minor: totalMinor,
+            remaining_minor: remainingMinor,
+            product_name: typeof response?.productName === "string" ? response.productName : null,
+            expiry_date: typeof response?.expiryDate === "string" ? response.expiryDate : null,
+          });
+        } catch (error) {
+          results.push({
+            pin_last4: pin.slice(-4),
+            error: error instanceof LesakaError ? error.message : "Could not check this voucher. Please try again or contact Lesaka.",
+          });
+        }
+      }
+      return json({ ok: true, read_only: true, results });
+    }
 
     if (body.action === "set_environment") {
       if(!["staging","production"].includes(body.target_environment)||body.confirmed!==true)return json({error:"Confirm the Lesaka environment change first."},400);

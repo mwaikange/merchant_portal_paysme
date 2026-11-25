@@ -19,6 +19,7 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [liveUsername,setLiveUsername]=useState(""),[livePassword,setLivePassword]=useState(""),[liveStoreId,setLiveStoreId]=useState(""),[approval,setApproval]=useState(""),[approved,setApproved]=useState(false);
+  const [voucherPins,setVoucherPins]=useState(""),[voucherResults,setVoucherResults]=useState<Array<Record<string,unknown>>>([]);
 
   const request = async (action: string, extra: Record<string, unknown> = {}) => {
     const { data, error: invokeError } = await supabase.functions.invoke("lesaka-credentials", {
@@ -67,6 +68,19 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
   };
 
   const blocked = disabled || loading || busy || !settings;
+  const lookupLiveVoucherValues=async()=>{
+    const pins=voucherPins.split(/\r?\n/).map(pin=>pin.trim()).filter(Boolean);
+    if(!pins.length){setError("Enter at least one voucher PIN.");return;}
+    setBusy(true);setError("");setMessage("");setVoucherResults([]);
+    try{
+      const {data,error:invokeError}=await supabase.functions.invoke("lesaka-credentials",{body:{action:"lookup_live_voucher_values",merchant_id:merchantId,pins}});
+      if(invokeError){const detail=invokeError.context instanceof Response?await invokeError.context.json().catch(()=>null):null;throw new Error(detail?.error||"Could not check live voucher values.");}
+      if(!data?.ok||!Array.isArray(data.results))throw new Error(data?.error||"Could not check live voucher values.");
+      setVoucherResults(data.results);setVoucherPins("");
+      setMessage("Live voucher status checked. No voucher was redeemed.");
+    }catch(e){setError(e instanceof Error?e.message:"Could not check live voucher values.");}
+    finally{setBusy(false);}
+  };
   const saveLive=async()=>{setBusy(true);setError("");try{setSettings(await request("save_live",{username:liveUsername,password:livePassword,store_id:liveStoreId}));setLiveUsername("");setLivePassword("");setMessage("Live credentials saved separately. Staging remains active until you switch to Live.");}catch(e){setError(e instanceof Error?e.message:"Live credentials could not be saved.");}finally{setBusy(false);}};
   const switchEnvironment=async(live:boolean)=>{if(!live&&!window.confirm("Switch this business to staging? Live Lesaka checkout will pause until you return to Live."))return;setBusy(true);setError("");try{await request("set_environment",{target_environment:live?"production":"staging",confirmed:live?approved:true,approval_reference:approval});const result=await request("status");setSettings(result);setStoreId(result.store_id||"");setUsername("");setPassword("");setApproved(false);setMessage(live?"Live Lesaka payments are active. Test results were removed and test checkouts closed.":"Staging is active. Open Lesaka staging tests to begin a cycle.");}catch(e){setError(e instanceof Error?e.message:"The Lesaka environment could not be changed.");}finally{setBusy(false);}};
   const id = "lesaka";
@@ -121,6 +135,25 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
           <p className="text-xs text-gray-500">{settings.live_ready?'Ready: use the Live switch above after confirming approval.':'The Live switch becomes available after three successful cycles and saved live credentials.'}</p>
         </div></details>}
       </div>}
+      {settings?.live_configured && <details className="mt-4 border-t pt-4">
+        <summary className="cursor-pointer text-sm font-semibold">Check live voucher values (read-only)</summary>
+        <div className="mt-3 space-y-3">
+          <p className="text-xs text-gray-500">Checks each PIN against Lesaka Live using the saved live credentials. This only reads status and value; it does not redeem vouchers or switch live checkout on. Enter one 16-digit PIN per line. PINs are not saved, and results show only the last four digits.</p>
+          <Label htmlFor={`${id}-live-voucher-pins`}>Voucher PINs</Label>
+          <textarea id={`${id}-live-voucher-pins`} rows={4} maxLength={2000} value={voucherPins} onChange={event=>setVoucherPins(event.target.value)} disabled={blocked} placeholder="One 16-digit voucher PIN per line" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" />
+          <Button type="button" variant="outline" disabled={blocked||!voucherPins.trim()} onClick={lookupLiveVoucherValues}>Check values without redeeming</Button>
+          {voucherResults.length>0&&<div className="space-y-2" aria-live="polite">{voucherResults.map((result,index)=>{
+            const currency=typeof result.currency==="string"?result.currency:"NAD";
+            const amount=(minor:unknown)=>Number.isSafeInteger(minor)?`${currency} ${(Number(minor)/100).toFixed(2)}`:"—";
+            return <div key={`${String(result.pin_last4||index)}-${index}`} className="rounded-md border p-3 text-sm">
+              <p className="font-semibold">PIN ending {String(result.pin_last4||"----")} · {String(result.status||"Not checked")}</p>
+              {result.error?<p role="alert" className="mt-1 text-red-600">{String(result.error)}</p>:<p className="mt-1 text-gray-600">Original value: {amount(result.total_minor)} · Remaining: {amount(result.remaining_minor)}</p>}
+              {typeof result.product_name==="string"&&<p className="text-xs text-gray-500">{result.product_name}</p>}
+              {typeof result.expiry_date==="string"&&<p className="text-xs text-gray-500">Expires: {new Date(result.expiry_date).toLocaleDateString()}</p>}
+            </div>;
+          })}</div>}
+        </div>
+      </details>}
     </div>
   );
 }
