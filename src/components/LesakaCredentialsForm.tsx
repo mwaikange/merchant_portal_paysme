@@ -75,7 +75,7 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
       <div className="mb-3 flex items-center justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-gray-900">Lesaka</p>
-          <p className="text-xs text-gray-500">Enter the API username and password Lesaka issued to your business.</p>
+          <p className="text-xs text-gray-500">Enter the Lesaka username and password for this environment. The account name “PaySME” does not need to be entered.</p>
         </div>
         <Badge variant="outline">{loading ? "Loading..." : settings?.configured ? "Credentials saved" : "Not configured"}</Badge>
       </div>
@@ -97,10 +97,10 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
           <Input id={`${id}-password`} required type="password" autoComplete="new-password" maxLength={4096} value={password} onChange={event => setPassword(event.target.value)} disabled={blocked} placeholder={settings?.configured ? "Password saved — enter to replace" : "Password provided by Lesaka"} />
         </div>
         <div>
-          <Label htmlFor={`${id}-store`}>Store ID (optional)</Label>
-          <Input id={`${id}-store`} maxLength={128} value={storeId} onChange={event => setStoreId(event.target.value)} disabled={blocked} placeholder="Only if supplied by Lesaka" />
+          <Label htmlFor={`${id}-store`}>Client ID / Store ID (optional)</Label>
+          <Input id={`${id}-store`} maxLength={128} value={storeId} onChange={event => setStoreId(event.target.value)} disabled={blocked} placeholder="Client ID supplied by Lesaka" />
         </div>
-        <p className="text-xs text-gray-500">Credentials are encrypted and saved for your merchant account. Saved values are never displayed again. Enter both fields to replace them.</p>
+          <p className="text-xs text-gray-500">Username and password are encrypted and saved for your merchant account. Client ID is sent as the optional Lesaka Store ID. Saved passwords are never displayed again.</p>
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
         {message && <p role="status" className="text-sm text-green-700">{message}</p>}
         <Button type="button" className="bg-paysme-green hover:bg-paysme-green/90" disabled={blocked || !username.trim() || !password} onClick={save}>
@@ -114,7 +114,7 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
           <p className="text-xs text-gray-500">Save the live username and password from Lesaka. After all 17 Excel workbook cases pass in each of three cycles, download the evidence and confirm Lesaka's approval. Switching to Live removes the test campaign and closes its test checkouts.</p>
           <Label htmlFor="lesaka-live-username">Live API username</Label><Input id="lesaka-live-username" autoComplete="off" value={liveUsername} onChange={e=>setLiveUsername(e.target.value)} disabled={blocked} placeholder={settings.live_configured?'Live username saved - enter to replace':'Live username from Lesaka'}/>
           <Label htmlFor="lesaka-live-password">Live API password</Label><Input id="lesaka-live-password" type="password" autoComplete="new-password" value={livePassword} onChange={e=>setLivePassword(e.target.value)} disabled={blocked} placeholder={settings.live_configured?'Live password saved - enter to replace':'Live password from Lesaka'}/>
-          <Label htmlFor="lesaka-live-store">Live Store ID (optional)</Label><Input id="lesaka-live-store" value={liveStoreId} onChange={e=>setLiveStoreId(e.target.value)} disabled={blocked} placeholder="Only if supplied by Lesaka"/>
+          <Label htmlFor="lesaka-live-store">Live Client ID / Store ID (optional)</Label><Input id="lesaka-live-store" value={liveStoreId} onChange={e=>setLiveStoreId(e.target.value)} disabled={blocked} placeholder="Client ID supplied by Lesaka"/>
           <Button type="button" disabled={blocked||!liveUsername.trim()||!livePassword} onClick={saveLive}>Save live credentials</Button>
           <Label htmlFor="lesaka-approval">Lesaka approval reference</Label><Input id="lesaka-approval" maxLength={200} value={approval} onChange={e=>setApproval(e.target.value)} disabled={blocked} placeholder="Approval email reference or case number"/>
           <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={approved} onChange={e=>setApproved(e.target.checked)} disabled={blocked}/><span>Lesaka approved this business's three test cycles, and I have downloaded the Excel results and full evidence.</span></label>

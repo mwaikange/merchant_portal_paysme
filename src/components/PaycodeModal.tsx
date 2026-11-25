@@ -668,7 +668,7 @@ export function PaycodeModal({
               </Button>
             )}
             {!billingLocked && eligibility?.methods?.kazang?.reason?.includes("not available yet") && (
-              <Button disabled className="w-full bg-[#B3D31B] text-black opacity-60">Lesaka — Coming soon</Button>
+              <Button disabled className="mt-2 w-full rounded bg-[#B3D31B] px-4 py-2 text-sm font-semibold text-black opacity-60">Lesaka — Coming soon</Button>
             )}
 
             {!billingLocked && methodEnabled("card") && (

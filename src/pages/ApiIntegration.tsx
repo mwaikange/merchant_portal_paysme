@@ -136,7 +136,7 @@ const facilitatorOptions = [
   { key: "wayame", label: "WayaMe", requiresCardPlan: false, description: "Verify the WayaMe/UPI payment address linked to your receiving account.", placeholder: "e.g. yourbusiness@wayame" },
   { key: "paypulse", label: "PayPulse", requiresCardPlan: false, description: "Enter the merchant code PayPulse issued directly to your business.", placeholder: "PayPulse merchant code" },
   { key: "paytoday", label: "PayToday", requiresCardPlan: false, description: "Your PayToday merchant code.", placeholder: "PayToday merchant code" },
-  { key: "kazang", label: "Lesaka", requiresCardPlan: false, description: "Enter your Lesaka API username and password.", placeholder: "Lesaka Store ID (optional)" },
+  { key: "kazang", label: "Lesaka", requiresCardPlan: false, description: "Enter your Lesaka API username and password, plus the optional Client ID / Store ID.", placeholder: "Lesaka Client ID / Store ID (optional)" },
 ];
 
 const getPlanKey = (planType?: string | null) => {
@@ -1253,18 +1253,18 @@ const ApiIntegration = () => {
                     <CardTitle>API Documentation · SDK v1.13.1</CardTitle>
                   </div>
                   <CardDescription>
-                    Updated 4 November 2026. SDK methods, Lesaka setup and voucher payments, private test recording, REST endpoints, webhooks and error handling.
+                    Updated 25 November 2026. SDK methods, live Lesaka voucher payments, REST endpoints, webhooks and error handling.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <Button asChild className="w-full" variant="default">
-                    <a href="/docs/PaySME_Payment_Modal_API_Integration.md?v=1.13.1-20261104" target="_blank" rel="noopener noreferrer">
+                    <a href="/docs/PaySME_Payment_Modal_API_Integration.md?v=1.13.1-20261125" target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4 mr-2" />
                       View Documentation
                     </a>
                   </Button>
                   <Button asChild className="w-full" variant="outline">
-                    <a href="/docs/PaySME_Payment_Modal_API_Integration.pdf?v=1.13.1-20261104" download>
+                    <a href="/docs/PaySME_Payment_Modal_API_Integration.pdf?v=1.13.1-20261125" download>
                       <Download className="h-4 w-4 mr-2" />
                       Download PDF
                     </a>
