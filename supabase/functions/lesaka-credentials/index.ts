@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
     if (body.action === "set_environment") {
       if(!["staging","production"].includes(body.target_environment)||body.confirmed!==true)return json({error:"Confirm the Lesaka environment change first."},400);
       const changed=await admin.rpc("set_lesaka_environment",{p_merchant:merchantId,p_environment:body.target_environment,p_reference:typeof body.approval_reference==="string"?body.approval_reference.trim():""});
-      if(changed.error)return json({error:"Live activation requires saved live credentials, all 17 Excel workbook cases passed in each of 3 cycles, exported evidence and Lesaka approval. Resolve pending or uncertain outcomes before switching."},409);
+      if(changed.error)return json({error:"Live activation requires saved live credentials and this merchant's UAT or recorded production approval. Resolve active or uncertain voucher payments before switching."},409);
       return json({ok:true,reload:true});
     } else if (body.action === "save" || body.action === "save_live") {
       const username = typeof body.username === "string" ? body.username.trim() : "";

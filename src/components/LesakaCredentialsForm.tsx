@@ -62,7 +62,7 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
     setBusy(true); setError(""); setMessage("");
     try {
       setSettings(await request("set_enabled", { enabled }));
-      setMessage(enabled ? "Lesaka is enabled for checkout once live credentials and testing are approved." : "Lesaka is hidden from customers.");
+      setMessage(enabled ? "Lesaka is visible to customers in the selected environment." : "Lesaka is hidden from customers.");
     } catch (error) { setError(error instanceof Error ? error.message : "Could not update Lesaka."); }
     finally { setBusy(false); }
   };
@@ -82,7 +82,7 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
     finally{setBusy(false);}
   };
   const saveLive=async()=>{setBusy(true);setError("");try{setSettings(await request("save_live",{username:liveUsername,password:livePassword,store_id:liveStoreId}));setLiveUsername("");setLivePassword("");setMessage("Live credentials saved separately. Staging remains active until you switch to Live.");}catch(e){setError(e instanceof Error?e.message:"Live credentials could not be saved.");}finally{setBusy(false);}};
-  const switchEnvironment=async(live:boolean)=>{if(!live&&!window.confirm("Switch this business to staging? Live Lesaka checkout will pause until you return to Live."))return;setBusy(true);setError("");try{await request("set_environment",{target_environment:live?"production":"staging",confirmed:live?approved:true,approval_reference:approval});const result=await request("status");setSettings(result);setStoreId(result.store_id||"");setUsername("");setPassword("");setApproved(false);setMessage(live?"Live Lesaka payments are active. Test results were removed and test checkouts closed.":"Staging is active. Open Lesaka staging tests to begin a cycle.");}catch(e){setError(e instanceof Error?e.message:"The Lesaka environment could not be changed.");}finally{setBusy(false);}};
+  const switchEnvironment=async(live:boolean)=>{if(!live&&!window.confirm("Switch this business to staging? Live Lesaka checkout will pause until you return to Live."))return;setBusy(true);setError("");try{await request("set_environment",{target_environment:live?"production":"staging",confirmed:live?approved:true,approval_reference:approval});const result=await request("status");setSettings(result);setStoreId(result.store_id||"");setUsername("");setPassword("");setApproved(false);setMessage(live?"Live Lesaka payments are active. Test checkouts are closed; their results remain available.":"Staging is active. Open Lesaka staging tests to begin a cycle.");}catch(e){setError(e instanceof Error?e.message:"The Lesaka environment could not be changed.");}finally{setBusy(false);}};
   const id = "lesaka";
   return (
     <div className="rounded-lg border bg-white p-3" aria-label="Lesaka credentials">
@@ -96,7 +96,7 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
       <div className="mb-3 flex items-center justify-between rounded-md border bg-gray-50 p-3">
         <div>
           <p className="text-xs font-semibold !text-white">Show this button to customers</p>
-          <p className="text-xs !text-white/90">Applies to hosted pages and SDK modals after live setup and testing.</p>
+          <p className="text-xs !text-white/90">Applies to hosted pages and SDK modals when this business is set to Live.</p>
         </div>
         <Switch aria-label="Show Lesaka to customers" checked={settings?.enabled === true} disabled={blocked || !settings?.configured} onCheckedChange={toggle} />
       </div>
@@ -123,16 +123,16 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
       </div>
       {settings?.environment === "staging" && settings.configured && <a href="/portal/api-integration/lesaka-tests" className="mt-4 inline-block text-sm font-semibold text-yellow-300 underline">Open Lesaka staging tests</a>}
       {settings && <div className="mt-4 space-y-3 border-t pt-4">
-        <div className="flex items-center justify-between gap-3"><div><p className="text-sm font-semibold">Lesaka environment: {settings.environment==='production'?'Live':'Staging'}</p><p className="text-xs text-gray-500">The payment modal and hosted pages use this business's selected environment automatically.</p></div><Switch aria-label="Use live Lesaka payments" checked={settings.environment==='production'} disabled={blocked||(settings.environment==='staging'&&(!settings.live_ready||!approved||approval.trim().length<3))} onCheckedChange={switchEnvironment}/></div>
-        {settings.environment==='staging' && <details><summary className="cursor-pointer text-sm font-semibold">Live credentials and approval</summary><div className="mt-3 space-y-3">
-          <p className="text-xs text-gray-500">Save the live username and password from Lesaka. After all 17 Excel workbook cases pass in each of three cycles, download the evidence and confirm Lesaka's approval. Switching to Live removes the test campaign and closes its test checkouts.</p>
+        <div className="flex items-center justify-between gap-3"><div><p className="text-sm font-semibold">Lesaka environment: {settings.environment==='production'?'Live':'Staging'}</p><p className="text-xs text-gray-500">The payment modal and hosted pages use this business's selected environment automatically.</p></div><Switch aria-label="Use live Lesaka payments" checked={settings.environment==='production'} disabled={blocked||(settings.environment==='staging'&&(!settings.live_ready||!approved))} onCheckedChange={switchEnvironment}/></div>
+        {settings.environment==='staging' && <details><summary className="cursor-pointer text-sm font-semibold">Live credentials and activation</summary><div className="mt-3 space-y-3">
+          <p className="text-xs text-gray-500">Save the live username and password from Lesaka. Live activation requires either the required UAT completion or recorded production approval, plus saved live credentials. Switching to Live closes test checkouts but keeps their results in the portal.</p>
           <Label htmlFor="lesaka-live-username">Live API username</Label><Input id="lesaka-live-username" autoComplete="off" value={liveUsername} onChange={e=>setLiveUsername(e.target.value)} disabled={blocked} placeholder={settings.live_configured?'Live username saved - enter to replace':'Live username from Lesaka'}/>
           <Label htmlFor="lesaka-live-password">Live API password</Label><Input id="lesaka-live-password" type="password" autoComplete="new-password" value={livePassword} onChange={e=>setLivePassword(e.target.value)} disabled={blocked} placeholder={settings.live_configured?'Live password saved - enter to replace':'Live password from Lesaka'}/>
           <Label htmlFor="lesaka-live-store">Live Client ID / Store ID (optional)</Label><Input id="lesaka-live-store" value={liveStoreId} onChange={e=>setLiveStoreId(e.target.value)} disabled={blocked} placeholder="Client ID supplied by Lesaka"/>
           <Button type="button" disabled={blocked||!liveUsername.trim()||!livePassword} onClick={saveLive}>Save live credentials</Button>
-          <Label htmlFor="lesaka-approval">Lesaka approval reference</Label><Input id="lesaka-approval" maxLength={200} value={approval} onChange={e=>setApproval(e.target.value)} disabled={blocked} placeholder="Approval email reference or case number"/>
-          <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={approved} onChange={e=>setApproved(e.target.checked)} disabled={blocked}/><span>Lesaka approved this business's three test cycles, and I have downloaded the Excel results and full evidence.</span></label>
-          <p className="text-xs text-gray-500">{settings.live_ready?'Ready: use the Live switch above after confirming approval.':'The Live switch becomes available after three successful cycles and saved live credentials.'}</p>
+          <Label htmlFor="lesaka-approval">Lesaka production reference (optional)</Label><Input id="lesaka-approval" maxLength={200} value={approval} onChange={e=>setApproval(e.target.value)} disabled={blocked} placeholder="Email reference or note, if available"/>
+          <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={approved} onChange={e=>setApproved(e.target.checked)} disabled={blocked}/><span>I confirm Lesaka issued these live credentials for this business, and I authorize real production voucher payments.</span></label>
+          <p className="text-xs text-gray-500">{settings.live_ready?'Ready: confirm above, then use the Live switch.':'The Live switch becomes available after required UAT completion or recorded production approval, and saved live credentials.'}</p>
         </div></details>}
       </div>}
       {settings?.live_configured && <details className="mt-4 border-t pt-4">
