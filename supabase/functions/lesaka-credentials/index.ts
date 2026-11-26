@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     if (body.action === "lookup_live_voucher_values") {
       const rawPins = Array.isArray(body.pins) ? body.pins : [];
       if (rawPins.length < 1 || rawPins.length > 10) return json({ error: "Enter between 1 and 10 voucher PINs." }, 400);
-      const referenceModes = ["uuid", "missing", "numeric8", "alphabetic8", "mixed8", "paysme_reference"] as const;
+      const referenceModes = ["uuid", "missing", "numeric10", "alphabetic10", "mixed10", "paysme_reference"] as const;
       const referenceMode = typeof body.client_reference_mode === "string" && referenceModes.includes(body.client_reference_mode as typeof referenceModes[number])
         ? body.client_reference_mode as typeof referenceModes[number]
         : "uuid";
@@ -67,9 +67,9 @@ Deno.serve(async (req) => {
         };
         const clientReference = referenceMode === "uuid" ? crypto.randomUUID()
           : referenceMode === "missing" ? undefined
-          : referenceMode === "numeric8" ? randomFrom("0123456789", 8)
-          : referenceMode === "alphabetic8" ? randomFrom("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 8)
-          : referenceMode === "mixed8" ? randomFrom("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 8)
+          : referenceMode === "numeric10" ? randomFrom("0123456789", 10)
+          : referenceMode === "alphabetic10" ? randomFrom("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 10)
+          : referenceMode === "mixed10" ? randomFrom("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 10)
           : "lesaka.paysme-namibia";
         const requestBody = {
           pin,

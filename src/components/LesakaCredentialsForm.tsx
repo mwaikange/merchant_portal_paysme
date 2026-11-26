@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 
 type Settings = { configured: boolean; enabled: boolean; store_id: string; environment: "staging" | "production";live_configured?:boolean;live_ready?:boolean;approval_reference?:string };
-type ClientReferenceMode = "uuid" | "missing" | "numeric8" | "alphabetic8" | "mixed8" | "paysme_reference";
+type ClientReferenceMode = "uuid" | "missing" | "numeric10" | "alphabetic10" | "mixed10" | "paysme_reference";
 
 export function LesakaCredentialsForm({ merchantId, disabled = false }: { merchantId: string; disabled?: boolean }) {
   const [username, setUsername] = useState("");
@@ -147,12 +147,12 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
             <select id={`${id}-client-reference-mode`} value={clientReferenceMode} onChange={event=>setClientReferenceMode(event.target.value as ClientReferenceMode)} disabled={blocked} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
               <option value="uuid">Current format — new UUID</option>
               <option value="missing">Omit ClientReference</option>
-              <option value="numeric8">8 numeric characters</option>
-              <option value="alphabetic8">8 alphabetic characters</option>
-              <option value="mixed8">8 mixed letters and numbers</option>
+              <option value="numeric10">10 numeric characters</option>
+              <option value="alphabetic10">10 alphabetic characters</option>
+              <option value="mixed10">10 mixed letters and numbers</option>
               <option value="paysme_reference">lesaka.paysme-namibia</option>
             </select>
-            <p className="mt-1 text-xs text-gray-500">Use one PIN per trial. The 8-character options are shorter than Lesaka’s documented 10-character minimum. Use the fixed PaySME reference only once.</p>
+            <p className="mt-1 text-xs text-gray-500">Use one PIN per trial. The 10-character options meet Lesaka’s documented minimum. Use the fixed PaySME reference only once.</p>
           </div>
           <Label htmlFor={`${id}-live-voucher-pins`}>Voucher PINs</Label>
           <textarea id={`${id}-live-voucher-pins`} rows={4} maxLength={2000} value={voucherPins} onChange={event=>setVoucherPins(event.target.value)} disabled={blocked} placeholder="One 16-digit voucher PIN per line" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" />
