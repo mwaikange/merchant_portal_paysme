@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 
 type Settings = { configured: boolean; enabled: boolean; store_id: string; environment: "staging" | "production";live_configured?:boolean;live_ready?:boolean;approval_reference?:string };
+type ClientReferenceMode = "uuid" | "missing" | "numeric8" | "alphabetic8" | "mixed8" | "paysme_reference";
 
 export function LesakaCredentialsForm({ merchantId, disabled = false }: { merchantId: string; disabled?: boolean }) {
   const [username, setUsername] = useState("");
@@ -20,6 +21,7 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
   const [message, setMessage] = useState("");
   const [liveUsername,setLiveUsername]=useState(""),[livePassword,setLivePassword]=useState(""),[liveStoreId,setLiveStoreId]=useState(""),[approval,setApproval]=useState(""),[approved,setApproved]=useState(false);
   const [voucherPins,setVoucherPins]=useState(""),[voucherResults,setVoucherResults]=useState<Array<Record<string,unknown>>>([]);
+  const [clientReferenceMode,setClientReferenceMode]=useState<ClientReferenceMode>("uuid");
 
   const request = async (action: string, extra: Record<string, unknown> = {}) => {
     const { data, error: invokeError } = await supabase.functions.invoke("lesaka-credentials", {
@@ -71,9 +73,10 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
   const lookupLiveVoucherValues=async()=>{
     const pins=voucherPins.split(/\r?\n/).map(pin=>pin.trim()).filter(Boolean);
     if(!pins.length){setError("Enter at least one voucher PIN.");return;}
+    if(clientReferenceMode!=="uuid"&&pins.length!==1){setError("For a ClientReference trial, enter one PIN only. Then run the next option separately.");return;}
     setBusy(true);setError("");setMessage("");setVoucherResults([]);
     try{
-      const {data,error:invokeError}=await supabase.functions.invoke("lesaka-credentials",{body:{action:"lookup_live_voucher_values",merchant_id:merchantId,pins}});
+      const {data,error:invokeError}=await supabase.functions.invoke("lesaka-credentials",{body:{action:"lookup_live_voucher_values",merchant_id:merchantId,pins,client_reference_mode:clientReferenceMode}});
       if(invokeError){const detail=invokeError.context instanceof Response?await invokeError.context.json().catch(()=>null):null;throw new Error(detail?.error||"Could not check live voucher values.");}
       if(!data?.ok||!Array.isArray(data.results))throw new Error(data?.error||"Could not check live voucher values.");
       setVoucherResults(data.results);setVoucherPins("");
@@ -139,6 +142,18 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
         <summary className="cursor-pointer text-sm font-semibold">Check live voucher values (read-only)</summary>
         <div className="mt-3 space-y-3">
           <p className="text-xs text-gray-500">Checks each PIN against Lesaka Live using the saved live credentials. This only reads status and value; it does not redeem vouchers or switch live checkout on. Enter one 16-digit PIN per line. PINs are not saved, and results show only the last four digits.</p>
+          <div>
+            <Label htmlFor={`${id}-client-reference-mode`}>Temporary ClientReference trial</Label>
+            <select id={`${id}-client-reference-mode`} value={clientReferenceMode} onChange={event=>setClientReferenceMode(event.target.value as ClientReferenceMode)} disabled={blocked} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="uuid">Current format — new UUID</option>
+              <option value="missing">Omit ClientReference</option>
+              <option value="numeric8">8 numeric characters</option>
+              <option value="alphabetic8">8 alphabetic characters</option>
+              <option value="mixed8">8 mixed letters and numbers</option>
+              <option value="paysme_reference">lesaka.paysme-namibia</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">Use one PIN per trial. The 8-character options are shorter than Lesaka’s documented 10-character minimum. Use the fixed PaySME reference only once.</p>
+          </div>
           <Label htmlFor={`${id}-live-voucher-pins`}>Voucher PINs</Label>
           <textarea id={`${id}-live-voucher-pins`} rows={4} maxLength={2000} value={voucherPins} onChange={event=>setVoucherPins(event.target.value)} disabled={blocked} placeholder="One 16-digit voucher PIN per line" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" />
           <Button type="button" variant="outline" disabled={blocked||!voucherPins.trim()} onClick={lookupLiveVoucherValues}>Check values without redeeming</Button>
@@ -147,6 +162,7 @@ export function LesakaCredentialsForm({ merchantId, disabled = false }: { mercha
             const amount=(minor:unknown)=>Number.isSafeInteger(minor)?`${currency} ${(Number(minor)/100).toFixed(2)}`:"—";
             return <div key={`${String(result.pin_last4||index)}-${index}`} className="rounded-md border p-3 text-sm">
               <p className="font-semibold">PIN ending {String(result.pin_last4||"----")} · {String(result.status||"Not checked")}</p>
+              <p className="mt-1 break-all text-xs text-gray-500">ClientReference: <span className="font-mono">{typeof result.client_reference==="string"?result.client_reference:"Not sent"}</span> · Lesaka HTTP: {typeof result.provider_http_status==="number"?result.provider_http_status:"No response"} · Trace: {typeof result.trace_id==="string"?result.trace_id:"Not returned"}</p>
               {result.error?<p role="alert" className="mt-1 text-red-600">{String(result.error)}</p>:<p className="mt-1 text-gray-600">Original value: {amount(result.total_minor)} · Remaining: {amount(result.remaining_minor)}</p>}
               {typeof result.product_name==="string"&&<p className="text-xs text-gray-500">{result.product_name}</p>}
               {typeof result.expiry_date==="string"&&<p className="text-xs text-gray-500">Expires: {new Date(result.expiry_date).toLocaleDateString()}</p>}
